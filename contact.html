@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact — Kinders van die Koning</title>
+  <meta name="description" content="Get in touch with Kinders van die Koning Early Development Centre in Strand, Cape Town. Queries, support, donations, and volunteering.">
+
+  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body data-page="contact">
+  <div id="kftk-navbar"></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">Say hello</span>
+      <h1>Get in touch</h1>
+      <p>Queries, compliments, enrolling a child, or a kind word — we'd love to hear from you.</p>
+    </div>
+  </section>
+
+  <!-- Contact form + details -->
+  <section>
+    <div class="container">
+      <div class="grid grid-2" style="gap:60px; align-items:start;">
+        <div>
+          <h2>Send us a message</h2>
+          <p class="text-muted mb-3">We typically reply within a few days. For urgent matters, please phone us.</p>
+
+          <form id="contact-form" class="mt-2">
+            <div class="field">
+              <label for="cf-name">Your name</label>
+              <input type="text" id="cf-name" name="name" class="input" required>
+            </div>
+            <div class="field">
+              <label for="cf-email">Your email</label>
+              <input type="email" id="cf-email" name="email" class="input" required>
+            </div>
+            <div class="field">
+              <label for="cf-topic">What's it about?</label>
+              <select id="cf-topic" name="topic" class="select">
+                <option>General query</option>
+                <option>I'd like to volunteer</option>
+                <option>Admissions / enrolling a child</option>
+                <option>Media / press</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="cf-msg">Your message</label>
+              <textarea id="cf-msg" name="message" class="textarea" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">Send message</button>
+            <p id="cf-result" style="display:none; margin-top:18px;"></p>
+          </form>
+        </div>
+
+        <aside>
+          <div class="card" id="contact-details">
+            <h3>Reach us directly</h3>
+            <p class="text-muted" id="contact-email-row">✉ <span id="contact-email">kindersvandiekoning@gmail.com</span></p>
+            <p class="text-muted" id="contact-phone-row">☎ <span id="contact-phone">Phone will appear here once set</span></p>
+            <p class="text-muted" id="contact-addr-row">📍 <span id="contact-addr">Community Hall of Casablanca, Strand, Cape Town</span></p>
+            <div class="divider" style="margin:26px 0;"></div>
+            <h4 style="margin-bottom:10px;">School hours</h4>
+            <p class="text-muted mb-0">Monday – Friday · Mornings only<br>Weekends · Closed</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Donate anchor -->
+  <section class="alt" id="donate">
+    <div class="container-narrow">
+      <div class="section-head">
+        <span class="eyebrow">Support the children</span>
+        <h2>Support / Donate</h2>
+        <p>Every meal, every uniform, every excursion — made possible by people who chose to help. If that's you, thank you. Leave a note below and we'll come back with banking details or anything else you need.</p>
+      </div>
+
+      <div class="card" style="padding:36px; max-width:640px; margin:0 auto;">
+        <h3 style="margin-bottom:8px;">Tell us you'd like to support</h3>
+        <p class="text-muted" style="margin-bottom:22px;">Goes directly to <strong>kindersvandiekoning@gmail.com</strong>.</p>
+
+        <form id="donate-form">
+          <div class="field">
+            <label for="df-name">Your name</label>
+            <input type="text" id="df-name" name="name" class="input" required>
+          </div>
+          <div class="field">
+            <label for="df-email">Your email</label>
+            <input type="email" id="df-email" name="email" class="input" required>
+          </div>
+          <div class="field">
+            <label for="df-type">How would you like to help?</label>
+            <select id="df-type" name="type" class="select">
+              <option>Monthly giving</option>
+              <option>A once-off donation</option>
+              <option>Sponsor a child's meals / uniform</option>
+              <option>Give items (food, clothes, stationery)</option>
+              <option>Prayer support</option>
+              <option>Other — I'll explain below</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="df-msg">Your message (optional)</label>
+            <textarea id="df-msg" name="message" class="textarea" placeholder="Anything we should know, an amount in mind, a question — or leave blank."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg">Send to the school</button>
+          <p id="df-result" style="display:none; margin-top:18px;"></p>
+        </form>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:50px;">
+        <div class="card">
+          <h3 style="font-size:1.1rem;">Monthly giving</h3>
+          <p>Steady monthly support gives us the stability to plan meals, uniforms, and the next term's teachers.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:1.1rem;">One-off donations</h3>
+          <p>A once-off gift buys real things — a pair of shoes, a week of meals, stationery for a term.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:1.1rem;">Pray for us</h3>
+          <p>If you pray, please pray for our children, our educators, and the new school building. It matters more than you think.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Volunteer anchor -->
+  <section id="volunteer">
+    <div class="container-narrow">
+      <div class="section-head">
+        <span class="eyebrow">Volunteer</span>
+        <h2>Lend us your hands</h2>
+        <p>We welcome volunteers for teaching, tutoring, mentoring, practical work, and events. Tell us a bit about yourself on the form above and we'll be in touch.</p>
+      </div>
+      <div style="text-align:center;">
+        <a href="#contact-form" class="btn btn-primary btn-lg">Tell us you're interested</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="kftk-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/loaders.js"></script>
+
+  <script>
+    (function () {
+      const cfg = window.KFTK_CONFIG || {};
+      const DONATE_EMAIL = "kindersvandiekoning@gmail.com";
+
+      // Fill in contact details from config (falling back to built-in defaults)
+      const c = cfg.site?.contact || {};
+      if (c.email) document.getElementById("contact-email").textContent = c.email;
+      if (c.phone) document.getElementById("contact-phone").textContent = c.phone;
+      else document.getElementById("contact-phone-row").style.display = "none";
+      if (c.address) document.getElementById("contact-addr").textContent = c.address;
+
+      // Init EmailJS if configured
+      if (cfg.emailjs?.publicKey && window.emailjs) {
+        window.emailjs.init({ publicKey: cfg.emailjs.publicKey });
+      }
+
+      // ── Generic contact form (queries, volunteer, enrolments)
+      const form = document.getElementById("contact-form");
+      const out  = document.getElementById("cf-result");
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true; btn.textContent = "Sending…";
+
+        const payload = {
+          name:    form.name.value.trim(),
+          email:   form.email.value.trim(),
+          topic:   form.topic.value,
+          message: form.message.value.trim(),
+          submitted_at: new Date().toISOString(),
+        };
+
+        // 1. Save to Supabase (if configured) so nothing gets lost
+        try {
+          if (window.KFTK_supabase) {
+            await window.KFTK_supabase.from("contact_queries").insert(payload);
+          }
+        } catch (err) { console.warn("Supabase insert failed", err); }
+
+        // 2. Email the admin via EmailJS (if configured)
+        let emailed = false;
+        try {
+          if (cfg.emailjs?.publicKey && cfg.emailjs?.serviceId && cfg.emailjs?.contactTemplateId && window.emailjs) {
+            await window.emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.contactTemplateId, {
+              from_name:  payload.name,
+              from_email: payload.email,
+              topic:      payload.topic,
+              message:    payload.message,
+              to_email:   cfg.site?.adminEmail || "",
+            });
+            emailed = true;
+          }
+        } catch (err) { console.warn("EmailJS failed", err); }
+
+        btn.disabled = false; btn.textContent = "Send message";
+        out.style.display = "block";
+        if (emailed || window.KFTK_supabase) {
+          out.className = "notice success";
+          out.textContent = "Thank you — your message is on its way. We'll reply as soon as we can.";
+          form.reset();
+        } else {
+          out.className = "notice error";
+          out.textContent = "Messaging is not configured yet. Please email us directly instead.";
+        }
+      });
+
+      // ── Donate form: always sends to kindersvandiekoning@gmail.com
+      const dform = document.getElementById("donate-form");
+      const dout  = document.getElementById("df-result");
+      dform.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const btn = dform.querySelector('button[type="submit"]');
+        btn.disabled = true; btn.textContent = "Sending…";
+
+        const payload = {
+          name:    dform.name.value.trim(),
+          email:   dform.email.value.trim(),
+          topic:   "Support / Donate — " + dform.type.value,
+          message: dform.message.value.trim() || "(no message)",
+          submitted_at: new Date().toISOString(),
+        };
+
+        // 1. Log in Supabase too so nothing gets lost
+        try {
+          if (window.KFTK_supabase) {
+            await window.KFTK_supabase.from("contact_queries").insert(payload);
+          }
+        } catch (err) { console.warn("Supabase insert failed", err); }
+
+        // 2. Send email directly to the donate address
+        let emailed = false;
+        try {
+          if (cfg.emailjs?.publicKey && cfg.emailjs?.serviceId && cfg.emailjs?.contactTemplateId && window.emailjs) {
+            await window.emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.contactTemplateId, {
+              from_name:  payload.name,
+              from_email: payload.email,
+              topic:      payload.topic,
+              message:    payload.message,
+              to_email:   DONATE_EMAIL,
+            });
+            emailed = true;
+          }
+        } catch (err) { console.warn("EmailJS failed (donate)", err); }
+
+        btn.disabled = false; btn.textContent = "Send to the school";
+        dout.style.display = "block";
+        if (emailed || window.KFTK_supabase) {
+          dout.className = "notice success";
+          dout.textContent = "Thank you — we've received your note and will be in touch.";
+          dform.reset();
+        } else {
+          dout.className = "notice error";
+          dout.innerHTML = 'Messaging is not configured yet. Please email <a href="mailto:' + DONATE_EMAIL + '">' + DONATE_EMAIL + '</a> directly.';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

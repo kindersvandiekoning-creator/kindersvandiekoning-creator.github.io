@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Our Staff — Kinders van die Koning</title>
+  <meta name="description" content="Meet the educators, caregivers, and volunteers at Kinders van die Koning Early Development Centre in Strand, Cape Town.">
+
+  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body data-page="staff">
+  <div id="kftk-navbar"></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">The people</span>
+      <h1>Our educators &amp; helpers</h1>
+      <p>Six educators at various stages of training — together with cooks, helpers, and volunteers — pour themselves into the children every morning. Our Grade&nbsp;R teacher holds an N6 Educare Certificate, and two of our educators have completed a two-year ECD course at Boland College.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div id="staff-grid" class="grid grid-auto-260">
+        <p class="text-muted">Loading team…</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container-narrow">
+      <div class="cta-block">
+        <h2>Would you like to help?</h2>
+        <p>We welcome volunteers, interns, and long-term helpers who share our vision — teaching, practical work, mentoring, or simply lending a hand at events. If that sounds like you, we'd love to hear from you.</p>
+        <a href="/contact.html#volunteer" class="btn btn-primary btn-lg">Volunteer with us</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="kftk-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/loaders.js"></script>
+
+  <script>
+    (async function () {
+      const cf = window.KFTK_cf;
+      const el = document.getElementById("staff-grid");
+      if (!cf) return;
+      try {
+        const res = await cf.getEntries("staffMember", { order: "fields.displayOrder,fields.name", limit: 100 });
+        if (!res.items.length) {
+          el.innerHTML = `<p class="text-muted">No staff members added yet. The admin can add them from the admin portal.</p>`;
+          return;
+        }
+        el.innerHTML = res.items.map(item => {
+          const f = item.fields;
+          const photo = cf.pickImage(f.photoUrl, f.photo, res.includes,
+            "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=400&q=80");
+          return `
+            <div class="staff-card reveal">
+              <div class="staff-avatar"><img src="${photo}" alt="${cf.escapeHtml(f.name)}"></div>
+              <div class="staff-name">${cf.escapeHtml(f.name)}</div>
+              <div class="staff-role">${cf.escapeHtml(f.role || "")}</div>
+              <p class="staff-bio">${cf.escapeHtml(f.bio || "")}</p>
+            </div>`;
+        }).join("");
+      } catch (e) {
+        console.error(e);
+        el.innerHTML = `<p class="text-muted">Staff could not be loaded right now.</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

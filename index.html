@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kinders van die Koning — Early Development Centre, Strand</title>
+  <meta name="description" content="Kinders van die Koning is a Christian Early Development Centre in Casablanca, Strand — caring for 70 pre-school children between the ages of 3 and 6 from the surrounding community.">
+
+  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body data-page="home">
+  <div id="kftk-navbar"></div>
+
+  <!-- ── HERO ─────────────────────────────────────────────── -->
+  <section class="hero" style="align-items:flex-end; justify-content:flex-start; min-height:96vh;">
+    <img class="hero-img"
+         id="hero-image"
+         src="https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=1800&q=80"
+         alt="Pre-school children learning together"
+         style="object-position: center 35%;">
+    <div class="hero-overlay"></div>
+
+    <!-- Decorative accent strip at top -->
+    <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--gold) 0%, var(--gold-dark) 50%, transparent 100%); z-index:4; opacity:.85;"></div>
+
+    <div class="hero-inner reveal" style="text-align:left; max-width:760px; padding-bottom:90px; padding-left:clamp(28px, 7vw, 100px);">
+      <span class="eyebrow" style="color:var(--gold);">Casablanca · Strand · Est. 2007</span>
+      <h1 style="font-size:clamp(2.5rem, 5.5vw, 4.6rem); line-height:1.06; margin-bottom:22px;">Where little lives<br>are shaped for good.</h1>
+      <p class="lead" style="max-width:520px; margin:0 0 36px; color:rgba(255,255,255,.82); font-size:1.12rem; line-height:1.65;">
+        An Early Development Centre caring for 70 children aged 3 – 6, from the heart of Casablanca and Sercor Park in Strand.
+      </p>
+
+      <!-- Stats strip -->
+      <div style="display:flex; gap:28px; margin-bottom:38px; flex-wrap:wrap;">
+        <div style="border-left:2px solid var(--gold); padding-left:14px;">
+          <div style="font-size:1.6rem; font-weight:800; color:#fff; line-height:1;">70</div>
+          <div style="font-size:.72rem; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.1em; margin-top:2px;">Children</div>
+        </div>
+        <div style="border-left:2px solid var(--gold); padding-left:14px;">
+          <div style="font-size:1.6rem; font-weight:800; color:#fff; line-height:1;">6</div>
+          <div style="font-size:.72rem; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.1em; margin-top:2px;">Educators</div>
+        </div>
+        <div style="border-left:2px solid var(--gold); padding-left:14px;">
+          <div style="font-size:1.6rem; font-weight:800; color:#fff; line-height:1;">20+</div>
+          <div style="font-size:.72rem; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.1em; margin-top:2px;">Years of care</div>
+        </div>
+      </div>
+
+      <div class="hero-cta" style="justify-content:flex-start;">
+        <a href="#about" class="btn btn-primary btn-lg">Our Story</a>
+        <a href="/contact.html#donate" class="btn btn-outline-light btn-lg">Support / Donate</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ABOUT / OUR STORY ────────────────────────────────── -->
+  <section id="about">
+    <div class="container">
+      <div class="grid grid-2" style="gap:70px; align-items:center;">
+        <div class="reveal">
+          <span class="eyebrow">Who we are</span>
+          <h2>A family before it is a school.</h2>
+          <div id="about-body">
+            <p class="lead">We care for 70 pre-school children between 3 and 6 years old — from the disadvantaged community around Casablanca and Sercor Park in Strand. Each child is known by name, fed, taught, and loved.</p>
+            <p>We're based at the Community Hall of Casablanca, which we lease from the City of Cape Town. Four donated prefab classrooms and a Wendy-house office stand alongside the hall, and a container serves as an additional storeroom. Our six educators teach five mornings a week, following the CAPS programme and preparing each child for mainstream school.</p>
+            <p>Every child receives two meals a day, and we take them on excursions to nature reserves and other places of interest. Parents contribute a small monthly fee and meet with us each term — because the centre belongs to the community as much as to us.</p>
+          </div>
+          <a href="/staff.html" class="btn btn-ghost mt-2">Meet the people behind the work <span class="arrow">→</span></a>
+        </div>
+        <div class="reveal">
+          <img id="about-image"
+               src="https://images.unsplash.com/photo-1581726707445-75cbe4efc586?auto=format&fit=crop&w=1200&q=80"
+               alt="A pre-school child smiling"
+               style="border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); aspect-ratio:4/5; object-fit:cover;">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── THREE PILLARS ────────────────────────────────────── -->
+  <section class="alt">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">What we do</span>
+        <h2>Three things we give every child.</h2>
+        <p>Simple in principle. The work of a lifetime in practice.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card reveal">
+          <div style="width:60px; height:60px; border-radius:var(--radius); background:var(--gold-soft); color:var(--gold-dark); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <h3>Safe care &amp; two meals a day</h3>
+          <p>A warm classroom, clean clothes, two nourishing meals a day, and educators who know every child by name.</p>
+        </div>
+        <div class="card reveal">
+          <div style="width:60px; height:60px; border-radius:var(--radius); background:var(--gold-soft); color:var(--gold-dark); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <h3>CAPS-aligned learning</h3>
+          <p>Grade R, Grade RR, and three-year-old classes, taught by a team following the national CAPS curriculum and preparing children for mainstream school.</p>
+        </div>
+        <div class="card reveal">
+          <div style="width:60px; height:60px; border-radius:var(--radius); background:var(--gold-soft); color:var(--gold-dark); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3>A family of faith</h3>
+          <p>A Christian home — in partnership with the Dutch Reformed Church Gordon's Bay — where children grow up knowing they are wanted, known, and loved.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── QUOTE ────────────────────────────────────────────── -->
+  <section>
+    <div class="container">
+      <blockquote class="quote-block reveal">
+        Let the little children come to me, and do not hinder them, for the kingdom of heaven belongs to such as these.
+      </blockquote>
+      <p class="quote-attr">Matthew 19:14</p>
+    </div>
+  </section>
+
+  <!-- ── CURRENT NUMBERS ─────────────────────────────────── -->
+  <section class="alt">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">At a glance</span>
+        <h2>The centre today</h2>
+      </div>
+      <div class="grid grid-3">
+        <div class="card reveal" style="text-align:center;">
+          <div style="font-size:2.6rem; font-weight:800; color:var(--navy); line-height:1;">70</div>
+          <p class="mb-0" style="margin-top:10px;">Pre-school children · ages 3 – 6</p>
+        </div>
+        <div class="card reveal" style="text-align:center;">
+          <div style="font-size:2.6rem; font-weight:800; color:var(--navy); line-height:1;">6</div>
+          <p class="mb-0" style="margin-top:10px;">Educators, at various stages of training</p>
+        </div>
+        <div class="card reveal" style="text-align:center;">
+          <div style="font-size:2.6rem; font-weight:800; color:var(--navy); line-height:1;">5</div>
+          <p class="mb-0" style="margin-top:10px;">Mornings a week, following the CAPS programme</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── COVER GALLERY ────────────────────────────────────── -->
+  <section>
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Life at the centre</span>
+        <h2>A glimpse into our days.</h2>
+      </div>
+      <div class="grid grid-auto-260" id="cover-gallery">
+        <img src="https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=700&q=80" alt="Children playing" style="border-radius:var(--radius); aspect-ratio:1/1; object-fit:cover;">
+        <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=700&q=80" alt="Classroom" style="border-radius:var(--radius); aspect-ratio:1/1; object-fit:cover;">
+        <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=700&q=80" alt="Children reading" style="border-radius:var(--radius); aspect-ratio:1/1; object-fit:cover;">
+        <img src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=700&q=80" alt="A smile" style="border-radius:var(--radius); aspect-ratio:1/1; object-fit:cover;">
+      </div>
+    </div>
+  </section>
+
+  <!-- ── LATEST EVENTS PREVIEW ────────────────────────────── -->
+  <section class="alt">
+    <div class="container">
+      <div class="section-head-row reveal">
+        <div>
+          <span class="eyebrow">What's happening</span>
+          <h2>Upcoming events</h2>
+        </div>
+        <a href="/events.html" class="btn btn-ghost">See all events <span class="arrow">→</span></a>
+      </div>
+      <div id="home-events-list">
+        <p class="text-muted">Loading upcoming events…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA / DONATE ─────────────────────────────────────── -->
+  <section>
+    <div class="container-narrow">
+      <div class="cta-block reveal">
+        <h2>Be part of the story.</h2>
+        <p>Support us with a monthly gift, sponsor a child's meals or uniform, pray for the work, or help us build the new school. Every act of care matters.</p>
+        <a href="/contact.html#donate" class="btn btn-primary btn-lg">How to help</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="kftk-footer"></div>
+
+  <!-- ── Scripts ──────────────────────────────────────────── -->
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/loaders.js"></script>
+
+  <!-- Home-page specific: load hero image from Contentful + latest events -->
+  <script>
+    (async function () {
+      const cf = window.KFTK_cf;
+      if (!cf) return;
+
+      // 1. Site Images (single entry holding all hero/cover images)
+      try {
+        const res = await cf.getEntries("siteImages", { limit: 1 });
+        const entry = res.items?.[0];
+        if (entry) {
+          const f = entry.fields || {};
+          const heroUrl  = cf.pickImage(f.homeHeroUrl,  f.homeHero,  res.includes);
+          const aboutUrl = cf.pickImage(f.homeAboutUrl, f.homeAbout, res.includes);
+          if (heroUrl)  document.getElementById("hero-image").src  = heroUrl;
+          if (aboutUrl) document.getElementById("about-image").src = aboutUrl;
+
+          const urls = Array.isArray(f.homeGalleryUrls) ? f.homeGalleryUrls.filter(Boolean) : [];
+          const galleryAssets = Array.isArray(f.homeGallery) ? f.homeGallery : [];
+          const final = urls.length ? urls : galleryAssets.map(a => cf.assetUrl(a, res.includes)).filter(Boolean);
+          if (final.length) {
+            const el = document.getElementById("cover-gallery");
+            el.innerHTML = final.map(u =>
+              `<img src="${u}" alt="" style="border-radius:var(--radius); aspect-ratio:1/1; object-fit:cover;">`
+            ).join("");
+          }
+        }
+      } catch (e) { console.warn("Site images load failed", e); }
+
+      // 2. About body override (optional Contentful entry)
+      try {
+        const res = await cf.getEntries("siteCopy", { "fields.slug": "home-about", limit: 1 });
+        const entry = res.items?.[0];
+        if (entry?.fields?.body) {
+          document.getElementById("about-body").innerHTML = cf.paraHtml(entry.fields.body);
+        }
+      } catch (e) { /* silent */ }
+
+      // 3. Upcoming events preview (next 3)
+      try {
+        const res = await cf.getEntries("event", { order: "-fields.startDate", limit: 50 });
+        const all = Array.isArray(res?.items) ? res.items : [];
+        const now = Date.now();
+        const upcoming = all
+          .map(x => ({ x, t: new Date(x.fields?.startDate || 0).getTime() || 0 }))
+          .filter(i => i.t >= now)
+          .sort((a, b) => a.t - b.t)
+          .slice(0, 3)
+          .map(i => i.x);
+
+        const el = document.getElementById("home-events-list");
+        if (!upcoming.length) {
+          el.innerHTML = `<p class="text-muted">No upcoming events right now — check back soon.</p>`;
+          return;
+        }
+        el.innerHTML = upcoming.map(item => {
+          const f = item.fields || {};
+          const b = cf.fmtDateBadge(f.startDate);
+          return `
+            <a href="/events.html#${encodeURIComponent(f.slug || item.sys.id)}" class="event-card">
+              <div class="event-date-badge">
+                <span class="day">${b.day || "—"}</span>
+                <span class="month">${b.month || ""}</span>
+              </div>
+              <div class="event-body">
+                <h3>${cf.escapeHtml(f.title || "(Untitled event)")}</h3>
+                <div class="meta">
+                  <span>🕐 ${cf.escapeHtml(f.time || "All day")}</span>
+                  <span>📍 ${cf.escapeHtml(f.location || "The centre")}</span>
+                </div>
+                <p>${cf.escapeHtml((f.summary || "").slice(0, 140))}${(f.summary || "").length > 140 ? "…" : ""}</p>
+              </div>
+            </a>`;
+        }).join("");
+      } catch (e) {
+        console.warn("Events load failed", e);
+      }
+    })();
+  </script>
+</body>
+</html>

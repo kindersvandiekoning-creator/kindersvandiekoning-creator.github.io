@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Newsletters — Kinders van die Koning</title>
+  <meta name="description" content="Read our recent newsletters from Kinders van die Koning Early Development Centre and sign up to receive the next one.">
+
+  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body data-page="newsletters">
+  <div id="kftk-navbar"></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">Letters home</span>
+      <h1>Newsletters</h1>
+      <p>Stories from the centre, updates on the children, and news on the new building — delivered gently, about once a month.</p>
+    </div>
+  </section>
+
+  <!-- Sign up (top of page so it's easy to find) -->
+  <section>
+    <div class="container-narrow">
+      <div class="card" style="padding:40px; text-align:center;">
+        <h3 style="margin-bottom:10px;">Get the next newsletter in your inbox</h3>
+        <p class="text-muted" style="margin-bottom:24px;">One email a month. No spam. Unsubscribe anytime.</p>
+        <form id="nl-subscribe" class="subscribe-row" style="margin:0 auto; justify-content:center;">
+          <input type="email" name="email" class="input" placeholder="Your email address" required>
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+        <p id="nl-subscribe-msg" style="margin-top:14px; font-size:.9rem; display:none;"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Archive -->
+  <section class="alt">
+    <div class="container-narrow">
+      <div class="section-head">
+        <span class="eyebrow">Archive</span>
+        <h2>Recent newsletters</h2>
+      </div>
+      <div id="nl-list">
+        <p class="text-muted">Loading…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal for reading the full newsletter -->
+  <div id="nl-modal" style="display:none; position:fixed; inset:0; background:rgba(15,27,53,.6); z-index:2000; padding:40px 20px; overflow-y:auto;">
+    <div style="background:var(--bg-ivory); max-width:780px; margin:0 auto; border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-lg);">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 30px; border-bottom:1px solid var(--line-soft);">
+        <strong id="nl-modal-title">Newsletter</strong>
+        <button id="nl-modal-close" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--navy);" aria-label="Close">&times;</button>
+      </div>
+      <div id="nl-modal-body" style="padding:34px 40px 44px; font-size:1rem; line-height:1.7;"></div>
+    </div>
+  </div>
+
+  <div id="kftk-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/loaders.js"></script>
+
+  <script>
+    (async function () {
+      const cf = window.KFTK_cf;
+      if (!cf) return;
+
+      const listEl = document.getElementById("nl-list");
+      let cached = [];
+
+      try {
+        const res = await cf.getEntries("newsletter", { order: "-fields.sentDate,-sys.createdAt", limit: 50 });
+        cached = res.items.map(item => ({ ...item, _includes: res.includes }));
+        if (!res.items.length) {
+          listEl.innerHTML = `<p class="text-muted">No newsletters sent yet.</p>`;
+          return;
+        }
+        listEl.innerHTML = res.items.map((item, i) => {
+          const f = item.fields;
+          const dateStr = cf.fmtDate(f.sentDate || item.sys.createdAt);
+          const initials = (f.title || "N").trim().slice(0, 2).toUpperCase();
+          return `
+            <div class="newsletter-card reveal" data-index="${i}" style="cursor:pointer;">
+              <div class="newsletter-icon">${cf.escapeHtml(initials)}</div>
+              <div class="newsletter-meta">
+                <h4>${cf.escapeHtml(f.title || "Untitled")}</h4>
+                <div class="date">${dateStr}${f.summary ? " · " + cf.escapeHtml(f.summary.slice(0, 90)) + (f.summary.length > 90 ? "…" : "") : ""}</div>
+              </div>
+              <span class="btn btn-ghost">Read <span class="arrow">→</span></span>
+            </div>`;
+        }).join("");
+
+        listEl.addEventListener("click", (e) => {
+          const card = e.target.closest(".newsletter-card");
+          if (!card) return;
+          const i = Number(card.dataset.index);
+          const item = cached[i];
+          if (!item) return;
+          openModal(item);
+        });
+
+      } catch (e) {
+        console.error(e);
+        listEl.innerHTML = `<p class="text-muted">Newsletters could not be loaded right now.</p>`;
+      }
+
+      // Modal
+      const modal = document.getElementById("nl-modal");
+      document.getElementById("nl-modal-close").onclick = () => modal.style.display = "none";
+      modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
+
+      function openModal(item) {
+        const f = item.fields;
+        document.getElementById("nl-modal-title").textContent = f.title || "Newsletter";
+        const photo = cf.pickImage(f.coverImageUrl, f.coverImage, item._includes);
+        const body =
+          (photo ? `<img src="${photo}" alt="" style="width:100%; border-radius:var(--radius); margin-bottom:22px;">` : "") +
+          `<p style="font-size:.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em;">${cf.fmtDate(f.sentDate || item.sys.createdAt)}</p>` +
+          `<h2 style="margin-bottom:24px;">${cf.escapeHtml(f.title || "")}</h2>` +
+          (f.summary ? `<p class="lead">${cf.escapeHtml(f.summary)}</p>` : "") +
+          (f.body ? cf.paraHtml(f.body) : "");
+        document.getElementById("nl-modal-body").innerHTML = body;
+        modal.style.display = "block";
+        modal.scrollTop = 0;
+      }
+
+      // Subscribe form
+      const form = document.getElementById("nl-subscribe");
+      const msg  = document.getElementById("nl-subscribe-msg");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = form.email.value.trim();
+        if (!/^\S+@\S+\.\S+$/.test(email)) return show("Please enter a valid email.", "error");
+        if (!window.KFTK_supabase) return show("Subscription is not configured yet.", "error");
+        const { error } = await window.KFTK_supabase.from("subscribers").insert({ email, source: "newsletters-page" });
+        if (error && !String(error.message || "").toLowerCase().includes("duplicate")) return show("Couldn't subscribe — please try again.", "error");
+        show("Thank you — you're on the list.", "success");
+        form.reset();
+      });
+      function show(text, kind) {
+        msg.textContent = text;
+        msg.style.display = "block";
+        msg.className = "notice " + kind;
+      }
+    })();
+  </script>
+</body>
+</html>

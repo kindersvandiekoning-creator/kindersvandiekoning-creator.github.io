@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — Kinders van die Koning</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+  <!-- Auth-gate: hide shell until session confirmed -->
+  <div id="auth-loading" style="display:flex; align-items:center; justify-content:center; min-height:100vh; color:var(--text-muted); font-size:.9rem;">Checking session…</div>
+
+  <div class="admin-shell" id="admin-shell" style="display:none;">
+
+    <!-- ── SIDEBAR ───────────────────────────────────────── -->
+    <aside class="admin-sidebar">
+      <div class="brand">
+        <img src="/assets/images/logo-white.svg" alt="" style="height:38px;">
+        <div class="brand-text">Kinders van die Koning<small>Admin portal</small></div>
+      </div>
+
+      <nav>
+        <a data-panel="dashboard" class="active">🏠 Dashboard</a>
+        <a data-panel="events">📅 Events</a>
+        <a data-panel="newsletters">✉ Newsletters</a>
+        <a data-panel="staff">👥 Staff</a>
+        <a data-panel="progress">🏗 New school</a>
+        <a data-panel="site-images">🖼 Site images</a>
+        <a data-panel="subscribers">📬 Subscribers</a>
+        <a data-panel="queries">💬 Queries</a>
+      </nav>
+
+      <div class="logout">
+        <button id="logout-btn" class="btn" type="button">Sign out</button>
+        <p style="font-size:.72rem; color:rgba(255,255,255,.4); margin:12px 0 0; text-align:center;">
+          <a href="/index.html" style="color:rgba(255,255,255,.55); text-decoration:underline;">← Visit the website</a>
+        </p>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ─────────────────────────────────────────── -->
+    <main class="admin-main">
+      <div class="admin-header">
+        <div>
+          <h2 id="panel-title">Dashboard</h2>
+          <p id="panel-subtitle">A quick look at everything at once.</p>
+        </div>
+        <div>
+          <span style="font-size:.85rem; color:var(--text-muted);">Signed in as <strong id="admin-email">…</strong></span>
+        </div>
+      </div>
+
+      <!-- ── DASHBOARD ──────────────────────────────────── -->
+      <section class="admin-panel active" id="panel-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="num" id="stat-events">–</div><div class="label">Upcoming events</div></div>
+          <div class="stat-card"><div class="num" id="stat-newsletters">–</div><div class="label">Newsletters</div></div>
+          <div class="stat-card"><div class="num" id="stat-staff">–</div><div class="label">Staff members</div></div>
+          <div class="stat-card"><div class="num" id="stat-subs">–</div><div class="label">Subscribers</div></div>
+          <div class="stat-card"><div class="num" id="stat-queries">–</div><div class="label">Queries (unread)</div></div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <h3>Welcome 👋</h3>
+          <p>Use the menu on the left to manage the website.</p>
+          <ul style="margin:16px 0; padding-left:20px; color:var(--text-muted);">
+            <li>📅 <strong>Events</strong> — add birthdays, prize-givings, anything coming up.</li>
+            <li>✉ <strong>Newsletters</strong> — write a newsletter, save it, and send it to everyone on the list.</li>
+            <li>👥 <strong>Staff</strong> — add or edit who's on the Our Staff page.</li>
+            <li>🏗 <strong>New school</strong> — post progress updates (with a photo) as the new building goes up.</li>
+            <li>🖼 <strong>Site images</strong> — change the big photos on the home page and the other pages.</li>
+            <li>📬 <strong>Subscribers</strong> — see who is on the mailing list. Export to a spreadsheet if needed.</li>
+            <li>💬 <strong>Queries</strong> — read messages sent from the Contact page.</li>
+          </ul>
+          <p class="text-muted" style="font-size:.88rem;">Everything you add here shows up on the public website within a few seconds.</p>
+        </div>
+      </section>
+
+      <!-- ── EVENTS ─────────────────────────────────────── -->
+      <section class="admin-panel" id="panel-events">
+        <div class="card" style="margin-bottom:24px;">
+          <h3 id="events-form-title">Add an event</h3>
+          <form id="events-form">
+            <input type="hidden" name="id">
+            <div class="grid grid-2">
+              <div class="field"><label>Title *</label><input class="input" name="title" required placeholder="e.g. End-of-term concert"></div>
+              <div class="field"><label>Slug</label><input class="input" name="slug" placeholder="auto-generated if empty"></div>
+              <div class="field"><label>Start date &amp; time *</label><input type="datetime-local" class="input" name="startDate" required></div>
+              <div class="field"><label>Time (display label)</label><input class="input" name="time" placeholder="e.g. 10:00 – 12:00"></div>
+              <div class="field"><label>Location</label><input class="input" name="location" placeholder="e.g. The school hall"></div>
+              <div class="field"><label>Photo</label>
+                <div class="photo-upload-row">
+                  <input type="hidden" name="photoUrl" value="">
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="photoUrl">📷 Upload photo</button>
+                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP</span>
+                </div>
+                <img class="field-photo-preview" alt="Event photo preview">
+              </div>
+            </div>
+            <div class="field"><label>Summary (short)</label><input class="input" name="summary" placeholder="One-line summary"></div>
+            <div class="field"><label>Details</label><textarea class="textarea" name="details" placeholder="Full description of the event"></textarea></div>
+            <div style="display:flex; gap:12px;">
+              <button type="submit" class="btn btn-primary">Save event</button>
+              <button type="button" class="btn btn-outline" id="events-cancel" style="display:none;">Cancel edit</button>
+            </div>
+            <p id="events-msg" style="display:none; margin-top:14px;"></p>
+          </form>
+        </div>
+
+        <h3 class="mb-2">All events</h3>
+        <table class="data-table" id="events-table">
+          <thead><tr><th>Date</th><th>Title</th><th>Location</th><th>Status</th><th></th></tr></thead>
+          <tbody><tr><td colspan="5" class="text-muted" style="text-align:center;">Loading…</td></tr></tbody>
+        </table>
+      </section>
+
+      <!-- ── NEWSLETTERS ────────────────────────────────── -->
+      <section class="admin-panel" id="panel-newsletters">
+        <div class="card" style="margin-bottom:24px;">
+          <h3 id="newsletters-form-title">Write a newsletter</h3>
+          <form id="newsletters-form">
+            <input type="hidden" name="id">
+            <div class="grid grid-2">
+              <div class="field"><label>Title *</label><input class="input" name="title" required placeholder="e.g. November update"></div>
+              <div class="field"><label>Date</label><input type="date" class="input" name="sentDate"></div>
+              <div class="field" style="grid-column: 1 / -1;"><label>Cover photo</label>
+                <div class="photo-upload-row">
+                  <input type="hidden" name="coverUrl" value="">
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="coverUrl">📷 Upload cover photo</button>
+                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP</span>
+                </div>
+                <img class="field-photo-preview" alt="Cover photo preview">
+              </div>
+            </div>
+            <div class="field"><label>Summary (short intro)</label><input class="input" name="summary" placeholder="Dear friends of the school…"></div>
+            <div class="field"><label>Body *</label><textarea class="textarea" name="body" required placeholder="The full newsletter text. Leave a blank line between paragraphs." style="min-height:240px;"></textarea></div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary">Save newsletter</button>
+              <button type="button" class="btn btn-navy" id="newsletters-send" style="display:none;">Save &amp; send to all subscribers</button>
+              <button type="button" class="btn btn-outline" id="newsletters-cancel" style="display:none;">Cancel edit</button>
+            </div>
+            <p id="newsletters-msg" style="display:none; margin-top:14px;"></p>
+          </form>
+        </div>
+
+        <h3 class="mb-2">All newsletters</h3>
+        <table class="data-table" id="newsletters-table">
+          <thead><tr><th>Date</th><th>Title</th><th>Status</th><th></th></tr></thead>
+          <tbody><tr><td colspan="4" class="text-muted" style="text-align:center;">Loading…</td></tr></tbody>
+        </table>
+      </section>
+
+      <!-- ── STAFF ──────────────────────────────────────── -->
+      <section class="admin-panel" id="panel-staff">
+        <div class="card" style="margin-bottom:24px;">
+          <h3 id="staff-form-title">Add a staff member</h3>
+          <form id="staff-form">
+            <input type="hidden" name="id">
+            <div class="grid grid-2">
+              <div class="field"><label>Name *</label><input class="input" name="name" required></div>
+              <div class="field"><label>Role *</label><input class="input" name="role" required placeholder="e.g. Head of School"></div>
+              <div class="field" style="grid-column:1/-1;"><label>Photo</label>
+                <div class="photo-upload-row">
+                  <input type="hidden" name="photoUrl" value="">
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="photoUrl">📷 Upload photo</button>
+                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP</span>
+                </div>
+                <img class="field-photo-preview" alt="Staff photo preview">
+              </div>
+              <div class="field">
+                <label>Display order <span style="font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0;">(1 = first · 100 = last)</span></label>
+                <div class="display-order-wrap">
+                  <input type="number" class="input" name="displayOrder" value="100" min="1" max="100" step="1">
+                  <button type="button" class="btn btn-outline btn-sm" id="order-auto-btn" title="Set to next available number">Auto</button>
+                </div>
+                <p class="display-order-hint">Use the arrows or type a number. Lower numbers appear first on the staff page. Click <strong>Auto</strong> to pick the next free slot.</p>
+              </div>
+            </div>
+            <div class="field"><label>Bio</label><textarea class="textarea" name="bio"></textarea></div>
+            <div style="display:flex; gap:12px;">
+              <button type="submit" class="btn btn-primary">Save staff member</button>
+              <button type="button" class="btn btn-outline" id="staff-cancel" style="display:none;">Cancel edit</button>
+            </div>
+            <p id="staff-msg" style="display:none; margin-top:14px;"></p>
+          </form>
+        </div>
+
+        <h3 class="mb-2">All staff</h3>
+        <table class="data-table" id="staff-table">
+          <thead><tr><th>Order</th><th>Name</th><th>Role</th><th></th></tr></thead>
+          <tbody><tr><td colspan="4" class="text-muted" style="text-align:center;">Loading…</td></tr></tbody>
+        </table>
+      </section>
+
+      <!-- ── PROGRESS ───────────────────────────────────── -->
+      <section class="admin-panel" id="panel-progress">
+        <div class="card" style="margin-bottom:24px;">
+          <h3 id="progress-form-title">Post a progress update</h3>
+          <form id="progress-form">
+            <input type="hidden" name="id">
+            <div class="grid grid-2">
+              <div class="field"><label>Title *</label><input class="input" name="title" required placeholder="e.g. Foundation poured"></div>
+              <div class="field"><label>Date *</label><input type="date" class="input" name="date" required></div>
+              <div class="field" style="grid-column:1/-1;"><label>Photo</label>
+                <div class="photo-upload-row">
+                  <input type="hidden" name="photoUrl" value="">
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="photoUrl">📷 Upload photo</button>
+                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP</span>
+                </div>
+                <img class="field-photo-preview" alt="Progress photo preview">
+              </div>
+            </div>
+            <div class="field"><label>Description</label><textarea class="textarea" name="body" placeholder="What was done? Any encouragement or news."></textarea></div>
+            <div style="display:flex; gap:12px;">
+              <button type="submit" class="btn btn-primary">Save update</button>
+              <button type="button" class="btn btn-outline" id="progress-cancel" style="display:none;">Cancel edit</button>
+            </div>
+            <p id="progress-msg" style="display:none; margin-top:14px;"></p>
+          </form>
+        </div>
+
+        <h3 class="mb-2">All updates</h3>
+        <table class="data-table" id="progress-table">
+          <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
+          <tbody><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading…</td></tr></tbody>
+        </table>
+      </section>
+
+      <!-- ── SITE IMAGES ────────────────────────────────── -->
+      <section class="admin-panel" id="panel-site-images">
+        <div class="card">
+          <h3>Main website images</h3>
+          <p class="text-muted">Upload the big photos used across the site. Click the upload button next to each, then click Save.</p>
+          <form id="site-images-form">
+
+            <div class="field"><label>Home — hero image (big photo on the front page)</label>
+              <div class="photo-upload-row">
+                <input type="hidden" name="homeHeroUrl" value="">
+                <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="homeHeroUrl">📷 Upload hero photo</button>
+              </div>
+              <img id="homeHero-preview" alt="" style="margin-top:10px; max-height:140px; border-radius:var(--radius); display:none; object-fit:cover; width:100%;">
+            </div>
+
+            <div class="field"><label>Home — "Our story" side image</label>
+              <div class="photo-upload-row">
+                <input type="hidden" name="homeAboutUrl" value="">
+                <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="homeAboutUrl">📷 Upload story photo</button>
+              </div>
+              <img id="homeAbout-preview" alt="" style="margin-top:10px; max-height:140px; border-radius:var(--radius); display:none; object-fit:cover; width:100%;">
+            </div>
+
+            <div class="field"><label>New School page — hero image</label>
+              <div class="photo-upload-row">
+                <input type="hidden" name="progressHeroUrl" value="">
+                <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="progressHeroUrl">📷 Upload new school photo</button>
+              </div>
+              <img id="progressHero-preview" alt="" style="margin-top:10px; max-height:140px; border-radius:var(--radius); display:none; object-fit:cover; width:100%;">
+            </div>
+
+            <div class="field">
+              <label>Home — gallery photos (up to 8)</label>
+              <p class="text-muted" style="font-size:.82rem; margin-bottom:14px; margin-top:-4px;">Click any slot to upload a photo. Filled slots show on the home page gallery. Empty slots are hidden.</p>
+              <div class="gallery-upload-grid" id="gallery-slots">
+                <!-- slots 0–7 -->
+                <div class="gallery-slot" data-index="0">
+                  <input type="hidden" name="galleryUrl_0" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 1</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_0">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="1">
+                  <input type="hidden" name="galleryUrl_1" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 2</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_1">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="2">
+                  <input type="hidden" name="galleryUrl_2" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 3</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_2">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="3">
+                  <input type="hidden" name="galleryUrl_3" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 4</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_3">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="4">
+                  <input type="hidden" name="galleryUrl_4" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 5</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_4">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="5">
+                  <input type="hidden" name="galleryUrl_5" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 6</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_5">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="6">
+                  <input type="hidden" name="galleryUrl_6" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 7</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_6">Upload</button>
+                </div>
+                <div class="gallery-slot" data-index="7">
+                  <input type="hidden" name="galleryUrl_7" value="">
+                  <img src="" alt="" class="gallery-slot-img">
+                  <div class="gallery-slot-placeholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Photo 8</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="galleryUrl_7">Upload</button>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Save site images</button>
+            <p id="site-images-msg" style="display:none; margin-top:14px;"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- ── SUBSCRIBERS ────────────────────────────────── -->
+      <section class="admin-panel" id="panel-subscribers">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+          <p class="text-muted mb-0">Everyone on the newsletter mailing list.</p>
+          <button class="btn btn-outline btn-sm" id="subs-export">Export CSV</button>
+        </div>
+        <table class="data-table" id="subs-table">
+          <thead><tr><th>Email</th><th>Source</th><th>Subscribed</th><th></th></tr></thead>
+          <tbody><tr><td colspan="4" class="text-muted" style="text-align:center;">Loading…</td></tr></tbody>
+        </table>
+      </section>
+
+      <!-- ── QUERIES ────────────────────────────────────── -->
+      <section class="admin-panel" id="panel-queries">
+        <p class="text-muted">Messages received from the Contact page.</p>
+        <div id="queries-list"><p class="text-muted">Loading…</p></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Hidden file input for uploads -->
+  <input type="file" id="upload-input" accept="image/*" style="display:none;">
+
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

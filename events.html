@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Events — Kinders van die Koning</title>
+  <meta name="description" content="Upcoming and recent events at Kinders van die Koning Early Development Centre, Strand, Cape Town.">
+
+  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body data-page="events">
+  <div id="kftk-navbar"></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">What's on</span>
+      <h1>Events</h1>
+      <p>Birthdays, bake-sales, parent meetings, excursions — here's what's coming up at the centre, and what we've done lately.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <!-- Main tabs: Upcoming / Past -->
+      <div style="display:flex; gap:6px; justify-content:center; margin-bottom:18px; flex-wrap:wrap;">
+        <button class="btn btn-navy btn-sm" data-tab="upcoming" id="tab-upcoming">Upcoming</button>
+        <button class="btn btn-outline btn-sm" data-tab="past" id="tab-past">Past events</button>
+      </div>
+
+      <!-- Year filter (shown only for Past tab) -->
+      <div id="year-filter-bar" style="display:none; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--line-soft);">
+        <!-- populated by JS -->
+      </div>
+      <div id="year-filter-bar-spacer" style="display:none; margin-bottom:32px;"></div>
+
+      <div id="events-upcoming" class="events-panel">
+        <p class="text-muted">Loading…</p>
+      </div>
+      <div id="events-past" class="events-panel" style="display:none;">
+        <p class="text-muted">Loading…</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="container-narrow">
+      <div class="cta-block">
+        <h2>Never miss an event.</h2>
+        <p>Subscribe to the newsletter and we'll send you a heads-up before every event, plus the occasional story from the centre.</p>
+        <form id="events-subscribe" class="subscribe-row" style="margin:0 auto; justify-content:center;">
+          <input type="email" name="email" class="input" placeholder="Your email" required>
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+        <p id="events-subscribe-msg" style="margin-top:14px; font-size:.85rem; display:none; color:rgba(255,255,255,.85);"></p>
+      </div>
+    </div>
+  </section>
+
+  <div id="kftk-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/loaders.js"></script>
+
+  <script>
+    (async function () {
+      const cf = window.KFTK_cf;
+      if (!cf) return;
+
+      const upEl        = document.getElementById("events-upcoming");
+      const pastEl      = document.getElementById("events-past");
+      const yearBar     = document.getElementById("year-filter-bar");
+      const yearSpacer  = document.getElementById("year-filter-bar-spacer");
+
+      let allPast = [];       // all past events sorted newest-first
+      let activeYear = "all"; // currently selected year filter
+
+      function renderEvents(items, includes, emptyText) {
+        if (!items.length) return `<p class="text-muted">${emptyText}</p>`;
+        return items.map(item => {
+          const f = item.fields || {};
+          const b = cf.fmtDateBadge(f.startDate);
+          const photo = cf.pickImage(f.photoUrl, f.photo, includes);
+          return `
+            <article class="event-card reveal" id="${cf.escapeHtml(f.slug || item.sys.id)}">
+              <div class="event-date-badge">
+                <span class="day">${b.day || "—"}</span>
+                <span class="month">${b.month || ""}</span>
+              </div>
+              <div class="event-body">
+                <h3>${cf.escapeHtml(f.title || "(Untitled event)")}</h3>
+                <div class="meta">
+                  <span>🕐 ${cf.escapeHtml(f.time || "All day")}</span>
+                  <span>📍 ${cf.escapeHtml(f.location || "The centre")}</span>
+                </div>
+                <p>${cf.escapeHtml(f.summary || "")}</p>
+                ${f.details ? `<details style="margin-top:10px;"><summary style="cursor:pointer; color:var(--gold-dark); font-weight:600;">Read more</summary><div style="margin-top:12px;">${cf.paraHtml(f.details)}</div></details>` : ""}
+                ${photo ? `<img src="${photo}" alt="" style="width:100%; border-radius:var(--radius); margin-top:16px; aspect-ratio:16/9; object-fit:cover;">` : ""}
+              </div>
+            </article>`;
+        }).join("");
+      }
+
+      function buildYearBar(pastItems) {
+        const thisYear = new Date().getFullYear();
+        const START_YEAR = 2016;
+        // Collect years that actually have events, plus always show from START_YEAR→thisYear
+        const yearsWithEvents = new Set(pastItems.map(x =>
+          new Date(x.fields?.startDate || 0).getFullYear()
+        ).filter(y => y >= START_YEAR));
+
+        // Full range: thisYear down to START_YEAR
+        const years = [];
+        for (let y = thisYear; y >= START_YEAR; y--) years.push(y);
+
+        const btns = [
+          `<button class="btn btn-navy btn-sm year-btn" data-year="all">All years</button>`,
+          ...years.map(y => {
+            const hasEvents = yearsWithEvents.has(y);
+            return `<button class="btn ${hasEvents ? "btn-outline" : "btn-ghost"} btn-sm year-btn" data-year="${y}" ${!hasEvents ? 'style="opacity:.45;"' : ""}>${y}</button>`;
+          })
+        ].join("");
+        yearBar.innerHTML = btns;
+
+        yearBar.querySelectorAll(".year-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            activeYear = btn.dataset.year;
+            // Update button styles
+            yearBar.querySelectorAll(".year-btn").forEach(b => {
+              const isAll = b.dataset.year === "all";
+              const hasEv = yearsWithEvents.has(Number(b.dataset.year));
+              b.className = "btn btn-sm year-btn " + (b === btn ? "btn-navy" : (hasEv || isAll ? "btn-outline" : "btn-ghost"));
+              if (!hasEv && !isAll && b !== btn) b.style.opacity = ".45";
+              else b.style.opacity = "";
+            });
+            // Filter past events
+            const filtered = activeYear === "all"
+              ? allPast
+              : allPast.filter(x => new Date(x.fields?.startDate || 0).getFullYear() === Number(activeYear));
+            pastEl.innerHTML = renderEvents(filtered, window.__eventsIncludes, "No events in " + activeYear + ".");
+          });
+        });
+      }
+
+      try {
+        const res = await cf.getEntries("event", { order: "-fields.startDate", limit: 200 });
+        window.__eventsIncludes = res.includes;
+        const all = Array.isArray(res?.items) ? res.items : [];
+        console.log("[events] fetched", all.length, "event(s)");
+        const now = Date.now();
+        const items = all.map(x => ({ x, t: new Date(x.fields?.startDate || 0).getTime() || 0 }));
+        const upcoming = items.filter(i => i.t >= now).sort((a,b) => a.t - b.t).map(i => i.x);
+        allPast        = items.filter(i => i.t <  now).sort((a,b) => b.t - a.t).map(i => i.x);
+
+        upEl.innerHTML  = renderEvents(upcoming, res.includes, "No upcoming events yet — check back soon.");
+        pastEl.innerHTML = renderEvents(allPast, res.includes, "No past events to show.");
+
+        buildYearBar(allPast);
+      } catch (e) {
+        console.error("[events] load failed", e);
+        upEl.innerHTML   = `<p class="text-muted">Events could not be loaded right now.</p>`;
+        pastEl.innerHTML = `<p class="text-muted">Events could not be loaded right now.</p>`;
+      }
+
+      // Tab switching (upcoming / past)
+      document.querySelectorAll("[data-tab]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tab = btn.dataset.tab;
+          document.getElementById("tab-upcoming").className = "btn btn-outline btn-sm";
+          document.getElementById("tab-past").className     = "btn btn-outline btn-sm";
+          btn.className = "btn btn-navy btn-sm";
+          document.getElementById("events-upcoming").style.display = (tab === "upcoming") ? "" : "none";
+          document.getElementById("events-past").style.display     = (tab === "past")     ? "" : "none";
+          // Show/hide year filter bar for past tab
+          const showYear = tab === "past";
+          yearBar.style.display    = showYear ? "flex" : "none";
+          yearSpacer.style.display = showYear ? "none" : "none";
+        });
+      });
+
+      // Inline subscribe
+      const form = document.getElementById("events-subscribe");
+      const msg  = document.getElementById("events-subscribe-msg");
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const email = form.email.value.trim();
+        if (!/^\S+@\S+\.\S+$/.test(email)) return show("Please enter a valid email.", "#F6B2B2");
+        if (!window.KFTK_supabase) return show("Subscription is not configured yet.", "#F6B2B2");
+        const { error } = await window.KFTK_supabase.from("subscribers").insert({ email, source: "events-page" });
+        if (error && !String(error.message || "").toLowerCase().includes("duplicate")) return show("Couldn't subscribe — please try again.", "#F6B2B2");
+        show("Thank you — you're on the list.", "#B7E4C7");
+        form.reset();
+      });
+      function show(txt, color) { msg.textContent = txt; msg.style.display = "block"; msg.style.color = color; }
+    })();
+  </script>
+</body>
+</html>
