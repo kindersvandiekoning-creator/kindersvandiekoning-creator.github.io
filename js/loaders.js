@@ -117,13 +117,23 @@
   }
 
   // ── 4. Scroll reveal ───────────────────────────────────────
+  // Works for both static elements AND elements injected later by Contentful fetches.
   function wireReveal() {
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
       });
-    }, { threshold: 0.12 });
-    document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+    }, { threshold: 0.08 });
+
+    // Observe elements already in the DOM
+    function observeAll() {
+      document.querySelectorAll(".reveal:not(.in)").forEach(el => io.observe(el));
+    }
+    observeAll();
+
+    // Watch for new .reveal elements added dynamically (Contentful cards, etc.)
+    const mo = new MutationObserver(() => observeAll());
+    mo.observe(document.body, { childList: true, subtree: true });
   }
 
   // ── 5. Init ────────────────────────────────────────────────

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Our Staff — Kinders van die Koning</title>
-  <meta name="description" content="Meet the educators, caregivers, and volunteers at Kinders van die Koning Early Development Centre in Strand, Cape Town.">
+  <title>Our Staff — Kinders vir die Koning</title>
+  <meta name="description" content="Meet the educators, caregivers, and volunteers at Kinders vir die Koning Early Development Centre in Strand, Cape Town.">
 
-  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="icon" type="image/png" href="/assets/images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,12 +21,39 @@
     <div class="container">
       <span class="eyebrow">The people</span>
       <h1>Our educators &amp; helpers</h1>
-      <p>Six educators at various stages of training — together with cooks, helpers, and volunteers — pour themselves into the children every morning. Our Grade&nbsp;R teacher holds an N6 Educare Certificate, and two of our educators have completed a two-year ECD course at Boland College.</p>
+      <p>Our dedicated team of educators, a cook, a caretaker, helpers, and volunteers pour themselves into the children every morning.</p>
     </div>
   </section>
 
-  <section>
+  <!-- Board of Directors -->
+  <section style="padding-bottom:40px;">
     <div class="container">
+      <div class="section-head-row" style="margin-bottom:28px;">
+        <div>
+          <span class="eyebrow">Governance</span>
+          <h2 style="margin-bottom:0;">Board of Directors</h2>
+        </div>
+      </div>
+      <div id="board-grid" class="grid grid-auto-260">
+        <p class="text-muted">Loading…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div style="max-width:1240px; margin:0 auto; padding:0 28px;">
+    <div class="divider" style="margin:0;"></div>
+  </div>
+
+  <!-- Educators & Staff -->
+  <section style="padding-top:40px;">
+    <div class="container">
+      <div class="section-head-row" style="margin-bottom:28px;">
+        <div>
+          <span class="eyebrow">The team</span>
+          <h2 style="margin-bottom:0;">Educators &amp; staff</h2>
+        </div>
+      </div>
       <div id="staff-grid" class="grid grid-auto-260">
         <p class="text-muted">Loading team…</p>
       </div>
@@ -52,30 +79,49 @@
 
   <script>
     (async function () {
-      const cf = window.KFTK_cf;
-      const el = document.getElementById("staff-grid");
+      const cf        = window.KFTK_cf;
+      const boardEl   = document.getElementById("board-grid");
+      const staffEl   = document.getElementById("staff-grid");
       if (!cf) return;
+
+      // Roles treated as board/governance
+      const BOARD_ROLES = ["director", "chairlady", "community worker"];
+      function isBoard(role) {
+        return BOARD_ROLES.some(r => (role || "").toLowerCase().includes(r));
+      }
+
+      function renderCard(item, includes) {
+        const f = item.fields;
+        const photo = cf.pickImage(f.photoUrl, f.photo, includes,
+          "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=400&q=80");
+        return `
+          <div class="staff-card reveal">
+            <div class="staff-avatar"><img src="${photo}" alt="${cf.escapeHtml(f.name)}"></div>
+            <div class="staff-name">${cf.escapeHtml(f.name)}</div>
+            <div class="staff-role">${cf.escapeHtml(f.role || "")}</div>
+            <p class="staff-bio">${cf.escapeHtml(f.bio || "")}</p>
+          </div>`;
+      }
+
       try {
         const res = await cf.getEntries("staffMember", { order: "fields.displayOrder,fields.name", limit: 100 });
-        if (!res.items.length) {
-          el.innerHTML = `<p class="text-muted">No staff members added yet. The admin can add them from the admin portal.</p>`;
-          return;
-        }
-        el.innerHTML = res.items.map(item => {
-          const f = item.fields;
-          const photo = cf.pickImage(f.photoUrl, f.photo, res.includes,
-            "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=400&q=80");
-          return `
-            <div class="staff-card reveal">
-              <div class="staff-avatar"><img src="${photo}" alt="${cf.escapeHtml(f.name)}"></div>
-              <div class="staff-name">${cf.escapeHtml(f.name)}</div>
-              <div class="staff-role">${cf.escapeHtml(f.role || "")}</div>
-              <p class="staff-bio">${cf.escapeHtml(f.bio || "")}</p>
-            </div>`;
-        }).join("");
+
+        // Delivery API returns plain field values (no locale wrapper)
+        const board = res.items.filter(i => isBoard(i.fields?.role));
+        const staff = res.items.filter(i => !isBoard(i.fields?.role));
+
+        boardEl.innerHTML = board.length
+          ? board.map(i => renderCard(i, res.includes)).join("")
+          : `<p class="text-muted" style="grid-column:1/-1;">No board members listed yet.</p>`;
+
+        staffEl.innerHTML = staff.length
+          ? staff.map(i => renderCard(i, res.includes)).join("")
+          : `<p class="text-muted" style="grid-column:1/-1;">No staff members listed yet.</p>`;
+
       } catch (e) {
         console.error(e);
-        el.innerHTML = `<p class="text-muted">Staff could not be loaded right now.</p>`;
+        boardEl.innerHTML = staffEl.innerHTML =
+          `<p class="text-muted">Could not load at the moment — please try again shortly.</p>`;
       }
     })();
   </script>

@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin — Kinders van die Koning</title>
+  <title>Admin — Kinders vir die Koning</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+  <link rel="icon" type="image/png" href="/assets/images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,11 +19,28 @@
 
   <div class="admin-shell" id="admin-shell" style="display:none;">
 
+    <!-- ── MOBILE TOP BAR (visible ≤860px only) ──────────── -->
+    <div class="admin-mobile-bar">
+      <button class="admin-hamburger" id="admin-hamburger" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="mob-brand">Kinders vir die Koning<small>Admin portal</small></div>
+    </div>
+
     <!-- ── SIDEBAR ───────────────────────────────────────── -->
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <!-- Close button (only visible on mobile) -->
+      <button class="admin-sidebar-close" id="admin-sidebar-close" aria-label="Close menu"
+        style="display:none; position:absolute; top:14px; right:14px; background:none; border:none; cursor:pointer; color:rgba(255,255,255,.7); padding:6px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
       <div class="brand">
-        <img src="/assets/images/logo-white.svg" alt="" style="height:38px;">
-        <div class="brand-text">Kinders van die Koning<small>Admin portal</small></div>
+        <img src="/assets/images/logo.png" alt="" style="height:46px; width:auto;">
+        <div class="brand-text">Kinders vir die Koning<small>Admin portal</small></div>
       </div>
 
       <nav>
@@ -245,7 +262,7 @@
                 <input type="hidden" name="homeHeroUrl" value="">
                 <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="homeHeroUrl">📷 Upload hero photo</button>
               </div>
-              <img id="homeHero-preview" alt="" style="margin-top:10px; max-height:140px; border-radius:var(--radius); display:none; object-fit:cover; width:100%;">
+              <img id="homeHero-preview" alt="" class="site-img-preview">
             </div>
 
             <div class="field"><label>Home — "Our story" side image</label>
@@ -253,7 +270,7 @@
                 <input type="hidden" name="homeAboutUrl" value="">
                 <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="homeAboutUrl">📷 Upload story photo</button>
               </div>
-              <img id="homeAbout-preview" alt="" style="margin-top:10px; max-height:140px; border-radius:var(--radius); display:none; object-fit:cover; width:100%;">
+              <img id="homeAbout-preview" alt="" class="site-img-preview">
             </div>
 
             <div class="field"><label>New School page — hero image</label>
@@ -261,7 +278,7 @@
                 <input type="hidden" name="progressHeroUrl" value="">
                 <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="progressHeroUrl">📷 Upload new school photo</button>
               </div>
-              <img id="progressHero-preview" alt="" style="margin-top:10px; max-height:140px; border-radius:var(--radius); display:none; object-fit:cover; width:100%;">
+              <img id="progressHero-preview" alt="" class="site-img-preview">
             </div>
 
             <div class="field">
@@ -374,9 +391,54 @@
   <!-- Hidden file input for uploads -->
   <input type="file" id="upload-input" accept="image/*" style="display:none;">
 
+  <!-- Mobile sidebar backdrop -->
+  <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop"></div>
+
   <script src="/js/config.js"></script>
   <script src="/js/supabase.js"></script>
   <script src="/js/contentful.js"></script>
   <script src="/js/admin.js"></script>
+
+  <script>
+    // ── Mobile sidebar drawer toggle ──────────────────────────
+    (function () {
+      const hamburger  = document.getElementById("admin-hamburger");
+      const sidebar    = document.getElementById("admin-sidebar");
+      const backdrop   = document.getElementById("admin-sidebar-backdrop");
+      const closeBtn   = document.getElementById("admin-sidebar-close");
+      if (!hamburger || !sidebar || !backdrop) return;
+
+      function isMobile() { return window.innerWidth <= 860; }
+
+      function openSidebar() {
+        sidebar.classList.add("open");
+        backdrop.classList.add("open");
+        document.body.style.overflow = "hidden";
+        if (closeBtn) closeBtn.style.display = "block";
+      }
+      function closeSidebar() {
+        sidebar.classList.remove("open");
+        backdrop.classList.remove("open");
+        document.body.style.overflow = "";
+        if (closeBtn) closeBtn.style.display = "none";
+      }
+
+      hamburger.addEventListener("click", openSidebar);
+      backdrop.addEventListener("click", closeSidebar);
+      if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+
+      // Close sidebar when a nav link is tapped on mobile
+      sidebar.querySelectorAll("nav a").forEach(link => {
+        link.addEventListener("click", () => {
+          if (isMobile()) closeSidebar();
+        });
+      });
+
+      // Clean up if resizing to desktop
+      window.addEventListener("resize", () => {
+        if (!isMobile()) closeSidebar();
+      });
+    })();
+  </script>
 </body>
 </html>
