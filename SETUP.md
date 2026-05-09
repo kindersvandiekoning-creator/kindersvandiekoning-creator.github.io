@@ -335,10 +335,10 @@ window.KFTK_CONFIG = {
   site: {
     name:    "Kinders van die Koning",
     tagline: "A Christian Early Development Centre in Strand.",
-    adminEmail: "kindersvandiekoning@gmail.com",
+    adminEmail: "kidsfortheking@gmail.com",
     location:   "Strand, Cape Town, South Africa",
     contact: {
-      email:   "kindersvandiekoning@gmail.com",
+      email:   "kidsfortheking@gmail.com",
       phone:   "+27 21 000 0000",
       address: "Community Hall of Casablanca, Strand, Cape Town",
     },

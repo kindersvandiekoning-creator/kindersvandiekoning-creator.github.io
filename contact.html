@@ -65,7 +65,7 @@
         <aside>
           <div class="card" id="contact-details">
             <h3>Reach us directly</h3>
-            <p class="text-muted" id="contact-email-row">✉ <span id="contact-email">kindersvandiekoning@gmail.com</span></p>
+            <p class="text-muted" id="contact-email-row">✉ <span id="contact-email">kidsfortheking@gmail.com</span></p>
             <p class="text-muted" id="contact-phone-row">☎ <span id="contact-phone">Phone will appear here once set</span></p>
             <p class="text-muted" id="contact-addr-row">📍 <span id="contact-addr">Community Hall of Casablanca, Strand, Cape Town</span></p>
             <div class="divider" style="margin:26px 0;"></div>
@@ -88,7 +88,7 @@
 
       <div class="card" style="padding:36px; max-width:640px; margin:0 auto;">
         <h3 style="margin-bottom:8px;">Tell us you'd like to support</h3>
-        <p class="text-muted" style="margin-bottom:22px;">Goes directly to <strong>kindersvandiekoning@gmail.com</strong>.</p>
+        <p class="text-muted" style="margin-bottom:22px;">Goes directly to <strong>kidsfortheking@gmail.com</strong>.</p>
 
         <form id="donate-form">
           <div class="field">
@@ -160,7 +160,7 @@
   <script>
     (function () {
       const cfg = window.KFTK_CONFIG || {};
-      const DONATE_EMAIL = "kindersvandiekoning@gmail.com";
+      const DONATE_EMAIL = "kidsfortheking@gmail.com";
 
       // Fill in contact details from config (falling back to built-in defaults)
       const c = cfg.site?.contact || {};
@@ -202,11 +202,13 @@
         try {
           if (cfg.emailjs?.publicKey && cfg.emailjs?.serviceId && cfg.emailjs?.contactTemplateId && window.emailjs) {
             await window.emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.contactTemplateId, {
+              to_email:   cfg.site?.adminEmail || "",
+              subject:    `New message from ${payload.name} (${payload.email}) — ${payload.topic}`,
               from_name:  payload.name,
               from_email: payload.email,
+              reply_to:   payload.email,
               topic:      payload.topic,
               message:    payload.message,
-              to_email:   cfg.site?.adminEmail || "",
             });
             emailed = true;
           }
@@ -224,7 +226,7 @@
         }
       });
 
-      // ── Donate form: always sends to kindersvandiekoning@gmail.com
+      // ── Donate form: always sends to kidsfortheking@gmail.com
       const dform = document.getElementById("donate-form");
       const dout  = document.getElementById("df-result");
       dform.addEventListener("submit", async function (e) {
@@ -252,11 +254,13 @@
         try {
           if (cfg.emailjs?.publicKey && cfg.emailjs?.serviceId && cfg.emailjs?.contactTemplateId && window.emailjs) {
             await window.emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.contactTemplateId, {
+              to_email:   DONATE_EMAIL,
+              subject:    `Support enquiry from ${payload.name} (${payload.email}) — ${dform.type.value}`,
               from_name:  payload.name,
               from_email: payload.email,
+              reply_to:   payload.email,
               topic:      payload.topic,
               message:    payload.message,
-              to_email:   DONATE_EMAIL,
             });
             emailed = true;
           }

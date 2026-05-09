@@ -425,11 +425,16 @@
       tbody.innerHTML = nlCache.map((e, i) => {
         const f = e.fields || {};
         const sent = !!f.emailSentAt?.[LOCALE];
+        const hasPdf = !!f.pdfFileUrl?.[LOCALE];
+        const statusBadge = sent
+          ? '<span class="pill">Sent</span>'
+          : '<span class="pill" style="background:rgba(27,42,78,.08); color:var(--navy);">Draft</span>';
+        const pdfBadge = hasPdf ? ' <span class="pill" style="background:var(--gold-soft); color:var(--gold-dark); font-size:.7rem;">📄 PDF</span>' : '';
         return `
           <tr>
             <td>${fmtDate(f.sentDate?.[LOCALE] || e.sys.createdAt)}</td>
             <td>${escapeHtml(f.title?.[LOCALE] || "(untitled)")}</td>
-            <td>${sent ? '<span class="pill">Sent</span>' : '<span class="pill" style="background:rgba(27,42,78,.08); color:var(--navy);">Draft</span>'}</td>
+            <td>${statusBadge}${pdfBadge}</td>
             <td class="row-actions">
               <button data-action="edit" data-i="${i}">Edit</button>
               <button data-action="send" data-i="${i}">Send</button>
@@ -441,20 +446,68 @@
       tbody.innerHTML = `<tr><td colspan="4" class="text-muted" style="text-align:center; color:#a02020;">${escapeHtml(err.message)}</td></tr>`;
     }
   }
+
+  function setNlPdfUi(form, url, filename) {
+    const chipWrap = document.getElementById("nl-pdf-chip-wrap");
+    const chipName = document.getElementById("nl-pdf-chip-name");
+    const status   = document.getElementById("nl-pdf-status");
+    form.pdfUrl.value = url || "";
+    if (url) {
+      chipName.textContent = filename || url.split("/").pop() || "newsletter.pdf";
+      chipWrap.style.display = "inline-flex";
+      if (status) status.style.display = "none";
+    } else {
+      chipWrap.style.display = "none";
+      if (status) { status.style.display = ""; status.textContent = "No PDF uploaded yet"; }
+    }
+  }
+
   function wireNewsletters() {
-    const form = document.getElementById("newsletters-form");
-    const msg  = document.getElementById("newsletters-msg");
-    const cancel = document.getElementById("newsletters-cancel");
+    const form    = document.getElementById("newsletters-form");
+    const msg     = document.getElementById("newsletters-msg");
+    const cancel  = document.getElementById("newsletters-cancel");
     const sendBtn = document.getElementById("newsletters-send");
-    const title = document.getElementById("newsletters-form-title");
+    const title   = document.getElementById("newsletters-form-title");
 
     function resetForm() {
       form.reset(); form.id.value = "";
       title.textContent = "Write a newsletter";
       cancel.style.display = "none"; sendBtn.style.display = "none";
       form.querySelectorAll(".field-photo-preview").forEach(p => { p.src = ""; p.style.display = "none"; });
+      setNlPdfUi(form, "", "");
     }
     cancel.addEventListener("click", resetForm);
+
+    // ── PDF upload button ────────────────────────────────────
+    const pdfFileInput = document.getElementById("pdf-upload-input");
+    const nlPdfBtn     = document.getElementById("nl-pdf-upload-btn");
+    const nlPdfRemove  = document.getElementById("nl-pdf-remove");
+
+    if (nlPdfBtn && pdfFileInput) {
+      nlPdfBtn.addEventListener("click", () => pdfFileInput.click());
+      pdfFileInput.addEventListener("change", async () => {
+        const file = pdfFileInput.files[0];
+        if (!file) return;
+        if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
+          alert("Please select a PDF file."); return;
+        }
+        nlPdfBtn.disabled = true; nlPdfBtn.textContent = "Uploading…";
+        const status = document.getElementById("nl-pdf-status");
+        if (status) { status.style.display = ""; status.textContent = "Uploading PDF…"; }
+        try {
+          const url = await cmUploadAsset(file, file.name.replace(/\.pdf$/i, ""));
+          setNlPdfUi(form, url, file.name);
+        } catch (err) {
+          alert("PDF upload failed: " + err.message);
+        } finally {
+          nlPdfBtn.disabled = false; nlPdfBtn.textContent = "📄 Upload PDF";
+          pdfFileInput.value = "";
+        }
+      });
+    }
+    if (nlPdfRemove) {
+      nlPdfRemove.addEventListener("click", () => setNlPdfUi(form, "", ""));
+    }
 
     async function save() {
       const id = form.id.value;
@@ -463,14 +516,22 @@
         title:    form.title.value.trim(),
         sentDate: form.sentDate.value || new Date().toISOString().slice(0,10),
         summary:  form.summary.value.trim(),
-        body:     form.body.value.trim(),
       };
+      // body is required in Contentful — use summary or a dash as fallback when PDF-only
+      fields.body = form.body.value.trim() || form.summary.value.trim() || "—";
       if (form.coverUrl.value.trim()) fields.coverImageUrl = form.coverUrl.value.trim();
+      if (form.pdfUrl.value.trim())  fields.pdfFileUrl   = form.pdfUrl.value.trim();
       return cmCreateOrUpdateEntry("newsletter", fields, existing);
     }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (!form.title.value.trim()) {
+        showMsg(msg, "Please fill in the title.", "error"); return;
+      }
+      if (!form.pdfUrl.value.trim() && !form.body.value.trim()) {
+        showMsg(msg, "Please upload a PDF or write a body text.", "error"); return;
+      }
       const btn = form.querySelector('button[type="submit"]');
       btn.disabled = true; btn.textContent = "Saving…";
       try {
@@ -485,20 +546,23 @@
     });
 
     sendBtn.addEventListener("click", async () => {
-      if (!form.title.value.trim() || !form.body.value.trim()) {
-        alert("Please fill in the title and the body before sending.");
-        return;
+      if (!form.title.value.trim()) {
+        alert("Please fill in the title before sending."); return;
       }
-      const ok = confirm("Save this newsletter and email it to every subscriber. Continue?");
+      if (!form.pdfUrl.value.trim() && !form.body.value.trim()) {
+        alert("Please upload a PDF or write a body text before sending."); return;
+      }
+      const ok = confirm("Save this newsletter and email subscribers a notification with a link. Continue?");
       if (!ok) return;
       sendBtn.disabled = true; sendBtn.textContent = "Saving & sending…";
       try {
         const entry = await save();
         const result = await sendNewsletterEmail({
-          title:   form.title.value.trim(),
-          summary: form.summary.value.trim(),
-          body:    form.body.value.trim(),
+          title:    form.title.value.trim(),
+          summary:  form.summary.value.trim(),
+          body:     form.body.value.trim(),
           coverUrl: form.coverUrl.value.trim(),
+          pdfUrl:   form.pdfUrl.value.trim(),
         });
 
         // Mark as sent in Contentful
@@ -536,6 +600,8 @@
         form.body.value     = f.body?.[LOCALE] || "";
         form.coverUrl.value = f.coverImageUrl?.[LOCALE] || "";
         updateFieldPreview(form, "coverUrl", f.coverImageUrl?.[LOCALE] || "");
+        const existingPdf = f.pdfFileUrl?.[LOCALE] || "";
+        setNlPdfUi(form, existingPdf, existingPdf ? existingPdf.split("/").pop() : "");
         title.textContent   = "Edit newsletter";
         cancel.style.display = "inline-flex";
         sendBtn.style.display = "inline-flex";
@@ -550,6 +616,7 @@
             summary:  f.summary?.[LOCALE] || "",
             body:     f.body?.[LOCALE] || "",
             coverUrl: f.coverImageUrl?.[LOCALE] || "",
+            pdfUrl:   f.pdfFileUrl?.[LOCALE] || "",
           });
           // Mark sent
           const full = await cmRequest(`/entries/${item.sys.id}`);
@@ -574,7 +641,7 @@
     });
   }
 
-  async function sendNewsletterEmail({ title, summary, body, coverUrl }) {
+  async function sendNewsletterEmail({ title, summary, body, coverUrl, pdfUrl }) {
     if (!cfg.emailjs?.publicKey || !cfg.emailjs?.serviceId || !cfg.emailjs?.newsletterTemplateId) {
       throw new Error("EmailJS is not configured yet.");
     }
@@ -589,20 +656,36 @@
 
     window.emailjs.init({ publicKey: cfg.emailjs.publicKey });
 
+    // For PDF newsletters, body_html is a "read online" message with a link
+    const siteUrl = cfg.site?.url || "https://kindersvandiekoning-creator.github.io";
+    const readLink = `${siteUrl}/newsletters.html`;
+    const bodyHtml = pdfUrl
+      ? `<p>${(summary || "").replace(/&/g,"&amp;").replace(/</g,"&lt;")}</p>
+         <p style="margin-top:24px;">
+           <a href="${readLink}" style="background:#D4A24B; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:700;">
+             Read the full newsletter →
+           </a>
+         </p>
+         <p style="margin-top:16px; font-size:.85em; color:#888;">
+           Or copy this link: ${readLink}
+         </p>`
+      : (body || "").split(/\n\s*\n/).map(p => `<p>${p.replace(/\n/g,"<br>")}</p>`).join("");
+
     // Send in chunks via BCC to keep under EmailJS limits
     const CHUNK = 45;
     for (let i = 0; i < emails.length; i += CHUNK) {
       const batch = emails.slice(i, i + CHUNK);
       await window.emailjs.send(cfg.emailjs.serviceId, cfg.emailjs.newsletterTemplateId, {
-        to_email: cfg.site?.adminEmail || batch[0],
-        bcc:      batch.join(","),
-        subject:  title,
+        to_email:  cfg.site?.adminEmail || batch[0],
+        bcc:       batch.join(","),
+        subject:   title,
         title,
         summary,
-        body_html: (body || "").split(/\n\s*\n/).map(p => `<p>${p.replace(/\n/g,"<br>")}</p>`).join(""),
-        body_text: body,
+        body_html: bodyHtml,
+        body_text: summary || body || "",
         cover_url: coverUrl || "",
-        year: new Date().getFullYear(),
+        pdf_url:   pdfUrl || "",
+        year:      new Date().getFullYear(),
       });
     }
     return { count: emails.length };

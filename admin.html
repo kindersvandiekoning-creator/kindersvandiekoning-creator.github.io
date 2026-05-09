@@ -147,17 +147,33 @@
             <div class="grid grid-2">
               <div class="field"><label>Title *</label><input class="input" name="title" required placeholder="e.g. November update"></div>
               <div class="field"><label>Date</label><input type="date" class="input" name="sentDate"></div>
-              <div class="field" style="grid-column: 1 / -1;"><label>Cover photo</label>
+              <div class="field" style="grid-column: 1 / -1;"><label>Cover photo <span style="font-weight:400; color:var(--text-muted);">(shows as thumbnail on the newsletter page)</span></label>
                 <div class="photo-upload-row">
                   <input type="hidden" name="coverUrl" value="">
                   <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="coverUrl">📷 Upload cover photo</button>
-                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP</span>
+                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP · <strong>Tip:</strong> screenshot the first page of your PDF for a great thumbnail</span>
                 </div>
                 <img class="field-photo-preview" alt="Cover photo preview">
               </div>
             </div>
-            <div class="field"><label>Summary (short intro)</label><input class="input" name="summary" placeholder="Dear friends of the school…"></div>
-            <div class="field"><label>Body *</label><textarea class="textarea" name="body" required placeholder="The full newsletter text. Leave a blank line between paragraphs." style="min-height:240px;"></textarea></div>
+            <div class="field"><label>Summary (short intro)</label><input class="input" name="summary" placeholder="e.g. Dear friends of the school — what a wonderful term it has been…"></div>
+            <div class="field">
+              <label>PDF Newsletter *</label>
+              <div class="photo-upload-row" style="flex-wrap:wrap; gap:8px;">
+                <input type="hidden" name="pdfUrl" value="">
+                <button type="button" class="btn btn-outline btn-sm" id="nl-pdf-upload-btn">📄 Upload PDF</button>
+                <span id="nl-pdf-status" style="font-size:.78rem; color:var(--text-muted);">No PDF uploaded yet</span>
+              </div>
+              <div id="nl-pdf-chip-wrap" style="margin-top:8px; display:none;">
+                <span class="pdf-chip" id="nl-pdf-chip-name"></span>
+                <button type="button" class="pdf-chip-remove" id="nl-pdf-remove" title="Remove PDF">✕</button>
+              </div>
+              <p style="font-size:.8rem; color:var(--text-muted); margin-top:6px; margin-bottom:0;">Visitors read the newsletter inline on the website — nothing to download or install.</p>
+            </div>
+            <div class="field">
+              <label>Body text <span style="font-weight:400; color:var(--text-muted);">(optional — for text-only newsletters without a PDF)</span></label>
+              <textarea class="textarea" name="body" placeholder="Only needed if you are not uploading a PDF. Leave a blank line between paragraphs." style="min-height:120px;"></textarea>
+            </div>
             <div style="display:flex; gap:12px; flex-wrap:wrap;">
               <button type="submit" class="btn btn-primary">Save newsletter</button>
               <button type="button" class="btn btn-navy" id="newsletters-send" style="display:none;">Save &amp; send to all subscribers</button>
@@ -388,8 +404,9 @@
     </main>
   </div>
 
-  <!-- Hidden file input for uploads -->
+  <!-- Hidden file inputs for uploads -->
   <input type="file" id="upload-input" accept="image/*" style="display:none;">
+  <input type="file" id="pdf-upload-input" accept=".pdf,application/pdf" style="display:none;">
 
   <!-- Mobile sidebar backdrop -->
   <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop"></div>

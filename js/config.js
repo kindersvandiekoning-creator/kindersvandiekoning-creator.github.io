@@ -47,11 +47,11 @@ window.KFTK_CONFIG = {
   site: {
     name:    "Kinders van die Koning",
     tagline: "A Christian Early Development Centre in Strand.",
-    adminEmail: "kindersvandiekoning@gmail.com",        // where contact-form submissions are sent
+    adminEmail: "kidsfortheking@gmail.com",        // where contact-form submissions are sent
     location:   "Strand, Cape Town, South Africa",
     year:       new Date().getFullYear(),
     contact: {
-      email:   "kindersvandiekoning@gmail.com",    // public contact email
+      email:   "kidsfortheking@gmail.com",    // public contact email
       phone:   "",
       address: "Community Hall of Casablanca, Strand, Cape Town",
     },

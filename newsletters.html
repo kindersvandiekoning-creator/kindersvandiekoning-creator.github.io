@@ -42,20 +42,32 @@
 
   <!-- Archive -->
   <section class="alt">
-    <div class="container-narrow">
-      <div class="section-head">
-        <span class="eyebrow">Archive</span>
-        <h2>Recent newsletters</h2>
+    <div class="container">
+      <div class="section-head-row" style="margin-bottom:10px;">
+        <div>
+          <span class="eyebrow">Archive</span>
+          <h2 style="margin-bottom:0;">Recent newsletters</h2>
+        </div>
       </div>
-      <div id="nl-list">
+
+      <!-- Year filter (populated by JS) -->
+      <div id="nl-year-filter" class="nl-year-tabs" style="display:none;"></div>
+
+      <!-- Cards -->
+      <div id="nl-grid" class="nl-grid">
         <p class="text-muted">Loading…</p>
+      </div>
+
+      <!-- Show more -->
+      <div id="nl-show-more-wrap" class="nl-show-more-wrap" style="display:none;">
+        <button id="nl-show-more" class="btn btn-outline">Show more newsletters</button>
       </div>
     </div>
   </section>
 
   <!-- Modal for reading the full newsletter -->
   <div id="nl-modal" style="display:none; position:fixed; inset:0; background:rgba(15,27,53,.6); z-index:2000; padding:40px 20px; overflow-y:auto;">
-    <div style="background:var(--bg-ivory); max-width:780px; margin:0 auto; border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-lg);">
+    <div id="nl-modal-inner" style="background:var(--bg-ivory); max-width:780px; margin:0 auto; border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-lg);">
       <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 30px; border-bottom:1px solid var(--line-soft);">
         <strong id="nl-modal-title">Newsletter</strong>
         <button id="nl-modal-close" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--navy);" aria-label="Close">&times;</button>
@@ -76,66 +88,199 @@
       const cf = window.KFTK_cf;
       if (!cf) return;
 
-      const listEl = document.getElementById("nl-list");
-      let cached = [];
+      const gridEl      = document.getElementById("nl-grid");
+      const yearFilter  = document.getElementById("nl-year-filter");
+      const showMoreWrap= document.getElementById("nl-show-more-wrap");
+      const showMoreBtn = document.getElementById("nl-show-more");
 
+      const BATCH = 3;
+      let cached      = [];   // all items, newest-first
+      let filtered    = [];   // after year filter
+      let shown       = 0;
+      let activeYear  = "all";
+
+      // ── Load ──────────────────────────────────────────────
       try {
-        const res = await cf.getEntries("newsletter", { order: "-fields.sentDate,-sys.createdAt", limit: 50 });
+        const res = await cf.getEntries("newsletter", { order: "-fields.sentDate,-sys.createdAt", limit: 100 });
         cached = res.items.map(item => ({ ...item, _includes: res.includes }));
-        if (!res.items.length) {
-          listEl.innerHTML = `<p class="text-muted">No newsletters sent yet.</p>`;
+
+        if (!cached.length) {
+          gridEl.innerHTML = `<div class="nl-empty">No newsletters yet — check back soon.</div>`;
           return;
         }
-        listEl.innerHTML = res.items.map((item, i) => {
-          const f = item.fields;
-          const dateStr = cf.fmtDate(f.sentDate || item.sys.createdAt);
-          const initials = (f.title || "N").trim().slice(0, 2).toUpperCase();
-          return `
-            <div class="newsletter-card reveal" data-index="${i}" style="cursor:pointer;">
-              <div class="newsletter-icon">${cf.escapeHtml(initials)}</div>
-              <div class="newsletter-meta">
-                <h4>${cf.escapeHtml(f.title || "Untitled")}</h4>
-                <div class="date">${dateStr}${f.summary ? " · " + cf.escapeHtml(f.summary.slice(0, 90)) + (f.summary.length > 90 ? "…" : "") : ""}</div>
-              </div>
-              <span class="btn btn-ghost">Read <span class="arrow">→</span></span>
-            </div>`;
-        }).join("");
 
-        listEl.addEventListener("click", (e) => {
-          const card = e.target.closest(".newsletter-card");
-          if (!card) return;
-          const i = Number(card.dataset.index);
-          const item = cached[i];
-          if (!item) return;
-          openModal(item);
-        });
+        buildYearTabs();
+        filterAndRender();
 
       } catch (e) {
         console.error(e);
-        listEl.innerHTML = `<p class="text-muted">Newsletters could not be loaded right now.</p>`;
+        gridEl.innerHTML = `<div class="nl-empty">Newsletters could not be loaded right now.</div>`;
       }
 
-      // Modal
+      // ── Year tabs ─────────────────────────────────────────
+      function buildYearTabs() {
+        const years = [...new Set(cached.map(item => {
+          return new Date(item.fields.sentDate || item.sys.createdAt).getFullYear();
+        }))].sort((a, b) => b - a);
+
+        if (years.length < 2) return; // no need for tabs with only one year
+        yearFilter.style.display = "flex";
+
+        const tabs = ["all", ...years];
+        yearFilter.innerHTML = tabs.map(y =>
+          `<button class="nl-year-tab${y === "all" ? " active" : ""}" data-year="${y}">
+             ${y === "all" ? "All years" : y}
+           </button>`
+        ).join("");
+
+        yearFilter.addEventListener("click", (e) => {
+          const btn = e.target.closest(".nl-year-tab");
+          if (!btn) return;
+          yearFilter.querySelectorAll(".nl-year-tab").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          activeYear = btn.dataset.year;
+          filterAndRender();
+        });
+      }
+
+      // ── Filter + render from scratch ──────────────────────
+      function filterAndRender() {
+        filtered = activeYear === "all"
+          ? cached
+          : cached.filter(item => {
+              const d = new Date(item.fields.sentDate || item.sys.createdAt);
+              return d.getFullYear().toString() === activeYear;
+            });
+        shown = 0;
+        gridEl.innerHTML = "";
+        if (!filtered.length) {
+          gridEl.innerHTML = `<div class="nl-empty">No newsletters for this period.</div>`;
+          showMoreWrap.style.display = "none";
+          return;
+        }
+        appendBatch();
+      }
+
+      // ── Append next batch ─────────────────────────────────
+      function appendBatch() {
+        const nextSlice = filtered.slice(shown, shown + BATCH);
+        nextSlice.forEach((item, batchIdx) => {
+          const globalIdx = shown + batchIdx;
+          const el = document.createElement("div");
+          el.innerHTML = renderCard(item, globalIdx, globalIdx === 0 && shown === 0);
+          const card = el.firstElementChild;
+          gridEl.appendChild(card);
+        });
+        shown += nextSlice.length;
+        showMoreWrap.style.display = shown < filtered.length ? "block" : "none";
+      }
+
+      showMoreBtn.addEventListener("click", appendBatch);
+
+      // ── Card HTML ─────────────────────────────────────────
+      function renderCard(item, index, featured) {
+        const f        = item.fields;
+        const date     = new Date(f.sentDate || item.sys.createdAt);
+        const month    = date.toLocaleString(undefined, { month: "long" });
+        const year     = date.getFullYear();
+        const hasPdf   = !!f.pdfFileUrl;
+        const photo    = cf.pickImage(f.coverImageUrl, f.coverImage, item._includes);
+        const dateStr  = cf.fmtDate(f.sentDate || item.sys.createdAt);
+        const summary  = (f.summary || "").trim();
+        const title    = cf.escapeHtml(f.title || "Untitled");
+
+        const thumb = photo
+          ? `<img class="nl-preview-thumb-img" src="${photo}" alt="${title}" loading="lazy">`
+          : `<div class="nl-preview-thumb-date">
+               <span class="nl-thumb-month">${month}</span>
+               <span class="nl-thumb-year">${year}</span>
+             </div>`;
+
+        const pdfBadge = hasPdf
+          ? `<span class="pill" style="background:var(--gold-soft); color:var(--gold-dark); font-size:.65rem; padding:3px 10px;">📄 PDF</span>`
+          : "";
+
+        return `
+          <div class="nl-preview-card reveal${featured ? " nl-featured" : ""}"
+               data-index="${index}" tabindex="0" role="button"
+               aria-label="Read ${title}">
+            <div class="nl-preview-thumb">${thumb}</div>
+            <div class="nl-preview-content">
+              <div class="nl-preview-meta">
+                <span class="nl-preview-date">${dateStr}</span>
+                ${pdfBadge}
+              </div>
+              <h3 class="nl-preview-title">${title}</h3>
+              ${summary ? `<p class="nl-preview-summary">${cf.escapeHtml(summary.slice(0, 160))}${summary.length > 160 ? "…" : ""}</p>` : ""}
+              <div class="nl-preview-footer">
+                <span class="btn btn-ghost btn-sm">Read newsletter <span class="arrow">→</span></span>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // ── Card clicks (delegated) ───────────────────────────
+      gridEl.addEventListener("click", (e) => {
+        const card = e.target.closest(".nl-preview-card");
+        if (!card) return;
+        const i = Number(card.dataset.index);
+        if (!isNaN(i) && filtered[i]) openModal(filtered[i]);
+      });
+      gridEl.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const card = e.target.closest(".nl-preview-card");
+        if (!card) return;
+        e.preventDefault();
+        const i = Number(card.dataset.index);
+        if (!isNaN(i) && filtered[i]) openModal(filtered[i]);
+      });
+
+      // ── Modal ─────────────────────────────────────────────
       const modal = document.getElementById("nl-modal");
-      document.getElementById("nl-modal-close").onclick = () => modal.style.display = "none";
-      modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
+      document.getElementById("nl-modal-close").onclick = () => closeModal();
+      modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+      function closeModal() { modal.style.display = "none"; }
 
       function openModal(item) {
-        const f = item.fields;
+        const f       = item.fields;
+        const pdfUrl  = f.pdfFileUrl || "";
+        const photo   = cf.pickImage(f.coverImageUrl, f.coverImage, item._includes);
+        const dateStr = cf.fmtDate(f.sentDate || item.sys.createdAt);
+
         document.getElementById("nl-modal-title").textContent = f.title || "Newsletter";
-        const photo = cf.pickImage(f.coverImageUrl, f.coverImage, item._includes);
-        const body =
-          (photo ? `<img src="${photo}" alt="" style="width:100%; border-radius:var(--radius); margin-bottom:22px;">` : "") +
-          `<p style="font-size:.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em;">${cf.fmtDate(f.sentDate || item.sys.createdAt)}</p>` +
-          `<h2 style="margin-bottom:24px;">${cf.escapeHtml(f.title || "")}</h2>` +
-          (f.summary ? `<p class="lead">${cf.escapeHtml(f.summary)}</p>` : "") +
-          (f.body ? cf.paraHtml(f.body) : "");
+        const inner = document.getElementById("nl-modal-inner");
+        inner.style.maxWidth = pdfUrl ? "960px" : "780px";
+
+        let body = "";
+        if (pdfUrl) {
+          body =
+            `<p style="font-size:.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px;">${dateStr}</p>` +
+            (f.summary ? `<p style="margin:0 0 18px; color:var(--text-muted);">${cf.escapeHtml(f.summary)}</p>` : "") +
+            `<div class="nl-pdf-wrap">
+               <iframe class="nl-pdf-viewer" src="${cf.escapeHtml(pdfUrl)}" title="${cf.escapeHtml(f.title || "Newsletter")}">
+                 <p>Your browser cannot display PDFs inline — use the button below.</p>
+               </iframe>
+               <div class="nl-pdf-actions">
+                 <a href="${cf.escapeHtml(pdfUrl)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">⬇ Download PDF</a>
+                 <a href="${cf.escapeHtml(pdfUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Open in new tab →</a>
+               </div>
+             </div>`;
+        } else {
+          body =
+            (photo ? `<img src="${photo}" alt="" style="width:100%; border-radius:var(--radius); margin-bottom:22px;">` : "") +
+            `<p style="font-size:.85rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em;">${dateStr}</p>` +
+            `<h2 style="margin-bottom:24px;">${cf.escapeHtml(f.title || "")}</h2>` +
+            (f.summary ? `<p class="lead">${cf.escapeHtml(f.summary)}</p>` : "") +
+            (f.body ? cf.paraHtml(f.body) : `<p class="text-muted">No content available for this newsletter.</p>`);
+        }
+
         document.getElementById("nl-modal-body").innerHTML = body;
         modal.style.display = "block";
         modal.scrollTop = 0;
       }
 
-      // Subscribe form
+      // ── Subscribe form ────────────────────────────────────
       const form = document.getElementById("nl-subscribe");
       const msg  = document.getElementById("nl-subscribe-msg");
       form.addEventListener("submit", async (e) => {
