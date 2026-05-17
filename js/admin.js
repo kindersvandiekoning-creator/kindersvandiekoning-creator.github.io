@@ -11,21 +11,43 @@
   const LOCALE  = "en-US";
 
   // ── 1. AUTH GATE ─────────────────────────────────────────
+  function showAuthError(msg) {
+    document.getElementById("auth-loading").innerHTML = `
+      <div style="text-align:center; padding:40px; max-width:420px;">
+        <p style="color:#a02020; margin-bottom:20px;">${msg}</p>
+        <a href="/login.html" class="btn btn-primary btn-sm">Sign in</a>
+        &nbsp;
+        <a href="/index.html" class="btn btn-outline btn-sm">Back to site</a>
+      </div>`;
+  }
+
   async function requireAuth() {
     if (!sb) {
-      document.getElementById("auth-loading").innerHTML =
-        `<div style="text-align:center;"><p>Supabase is not configured yet.</p><p><a href="/index.html" class="btn btn-outline btn-sm" style="margin-top:12px;">Back to site</a></p></div>`;
+      showAuthError("Supabase is not configured yet — see SETUP.md.");
       return false;
     }
-    const { data } = await sb.auth.getSession();
-    if (!data?.session) {
-      window.location.href = "/login.html";
+    try {
+      // Race getSession against a 12-second timeout so the page never hangs
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Connection timed out. Check your internet connection and try again.")), 12000)
+      );
+      const { data, error } = await Promise.race([sb.auth.getSession(), timeout]);
+      if (error) throw error;
+      if (!data?.session) {
+        window.location.href = "/login.html";
+        return false;
+      }
+      document.getElementById("admin-email").textContent = data.session.user.email || "";
+      document.getElementById("auth-loading").style.display = "none";
+      document.getElementById("admin-shell").style.display  = "grid";
+      return true;
+    } catch (err) {
+      showAuthError(
+        `Could not verify your session.<br>
+         <small style="color:var(--text-muted);">${err.message || "Unknown error"}</small>`
+      );
       return false;
     }
-    document.getElementById("admin-email").textContent = data.session.user.email || "";
-    document.getElementById("auth-loading").style.display = "none";
-    document.getElementById("admin-shell").style.display  = "grid";
-    return true;
   }
 
   // ── 2. PANEL SWITCHING ───────────────────────────────────
