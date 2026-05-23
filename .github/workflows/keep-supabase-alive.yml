@@ -1,0 +1,39 @@
+# ──────────────────────────────────────────────────────────────
+# keep-supabase-alive.yml
+#
+# Pings the Supabase project every 5 days so the free-tier
+# database never pauses due to inactivity (Supabase pauses
+# after 7 days with no traffic).
+#
+# No secrets needed — the anon key is already public in config.js.
+# ──────────────────────────────────────────────────────────────
+
+name: Keep Supabase alive
+
+on:
+  schedule:
+    # Every 5 days at 07:00 UTC  (well within the 7-day pause window)
+    - cron: "0 7 */5 * *"
+  workflow_dispatch:   # also allows a manual run from the GitHub Actions tab
+
+jobs:
+  ping:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit Supabase REST endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://ibkofwakscfjboszgqac.supabase.co/rest/v1/subscribers?select=count" \
+            -H "apikey: sb_publishable_xfUmNhwl5MaycsmLZLWvyQ_STXRvJe-" \
+            -H "Authorization: Bearer sb_publishable_xfUmNhwl5MaycsmLZLWvyQ_STXRvJe-")
+          echo "Supabase responded with HTTP $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+            echo "✅ Project is alive."
+          elif [ "$STATUS" -eq 503 ]; then
+            echo "⚠️  Project appears to be paused (503). Please restore it in the Supabase dashboard."
+            exit 1
+          else
+            echo "⚠️  Unexpected status $STATUS — check Supabase dashboard."
+            exit 1
+          fi
