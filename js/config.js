@@ -18,7 +18,7 @@ window.KFTK_CONFIG = {
     environment:    "master",
     deliveryToken:  "KIW5VajsS_qcR-ubcyVDbnRbDl7PQSoX-S1f514MhdU",   // Content Delivery API — PUBLIC (for visitors)
     previewToken:   "IOzFQdMsNot9ZxJcQrtfJ8dDLwRDOWqNmUd8jf33kI4",   // (optional) Preview API — not required
-    managementToken:"CFPAT-5bBaowi3QAXj4agUvhEqzSBrNNzhfSWh4DIMmwJtS80",   // Content Management API — ADMIN ONLY (used on /admin.html to write new events, newsletters, staff, progress updates). SENSITIVE — anyone who views admin page source can see it. Acceptable because only the admin opens that page.
+    managementToken:"CFPAT-Sd9guz7ubVs3owQ4RvEOS3ifaiEkqVvu5ndOxfOlm_A",   // Content Management API — ADMIN ONLY (used on /admin.html to write new events, newsletters, staff, progress updates). SENSITIVE — anyone who views admin page source can see it. Acceptable because only the admin opens that page.
   },
 
   /* ────────────────────────────────────────────────────────────
