@@ -76,8 +76,9 @@
 
   // ── 3. CONTENTFUL MANAGEMENT HELPERS ─────────────────────
   function cmHeaders(extra = {}) {
+    const token = window.KFTK_MANAGEMENT_TOKEN || cfg.contentful?.managementToken || "";
     return Object.assign({
-      "Authorization": `Bearer ${cfg.contentful?.managementToken || ""}`,
+      "Authorization": `Bearer ${token}`,
       "Content-Type":  "application/vnd.contentful.management.v1+json",
     }, extra);
   }
@@ -86,7 +87,8 @@
   }
 
   async function cmRequest(path, { method = "GET", body, extraHeaders = {} } = {}) {
-    if (!cfg.contentful?.spaceId || !cfg.contentful?.managementToken) {
+    const token = window.KFTK_MANAGEMENT_TOKEN || cfg.contentful?.managementToken || "";
+    if (!cfg.contentful?.spaceId || !token) {
       throw new Error("Contentful is not configured.");
     }
     const res = await fetch(cmBase() + path, {
