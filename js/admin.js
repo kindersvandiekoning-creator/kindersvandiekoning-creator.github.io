@@ -58,6 +58,7 @@
     staff:       ["Staff", "The people on the Our Staff page."],
     progress:    ["New school progress", "Updates on the new school building."],
     "site-images":["Site images", "The big photos on the home page and others."],
+    donors:      ["Donors & Partners", "The organisations and individuals on the Donors & Partners page."],
     subscribers: ["Subscribers", "Everyone on the newsletter mailing list."],
     queries:     ["Queries", "Messages sent via the Contact page."],
   };
@@ -973,7 +974,155 @@
     if (url) { el.src = url; el.style.display = "block"; } else { el.style.display = "none"; }
   }
 
-  // ── 10. SUBSCRIBERS PANEL ────────────────────────────────
+  // ── 10. DONORS PANEL ─────────────────────────────────────
+  const INITIAL_DONORS = [
+    { name: "Proud Partners",                    displayOrder: 1 },
+    { name: "Bana Bathemba",                     displayOrder: 2 },
+    { name: "Frans Dreyer Liefdadigheids Trust", displayOrder: 3 },
+    { name: "Tirisanu Construction",             displayOrder: 4 },
+  ];
+
+  async function setupDonorContentType() {
+    const setupMsg = document.getElementById("donors-setup-msg");
+    const setupBtn = document.getElementById("donors-setup-btn");
+    function log(text, kind) {
+      setupMsg.style.display = "block";
+      setupMsg.className = "notice " + kind;
+      setupMsg.textContent = text;
+    }
+    try {
+      setupBtn.disabled = true; setupBtn.textContent = "Creating content type…";
+      const ct = await cmRequest("/content_types/donor", {
+        method: "PUT",
+        body: {
+          name: "Donor",
+          displayField: "name",
+          fields: [
+            { id: "name",         name: "Name",         type: "Symbol",  required: true  },
+            { id: "description",  name: "Description",  type: "Text",    required: false },
+            { id: "logoUrl",      name: "Logo URL",      type: "Symbol",  required: false },
+            { id: "websiteUrl",   name: "Website URL",   type: "Symbol",  required: false },
+            { id: "displayOrder", name: "Display order", type: "Integer", required: false },
+          ],
+        },
+        extraHeaders: { "X-Contentful-Version": "0" },
+      });
+      if (!ct) throw new Error("Could not create content type.");
+      await cmRequest(`/content_types/donor/published`, {
+        method: "PUT",
+        extraHeaders: { "X-Contentful-Version": String(ct.sys.version) },
+      });
+      log("Content type created! Seeding initial partners…", "info");
+      for (const d of INITIAL_DONORS) {
+        await cmCreateOrUpdateEntry("donor", d);
+      }
+      log("Done! The 4 initial partners have been added.", "success");
+      document.getElementById("donors-setup-card").style.display = "none";
+      loadDonors();
+    } catch (err) {
+      log("Setup failed: " + err.message, "error");
+      setupBtn.disabled = false; setupBtn.textContent = "🚀 Create content type & seed donors";
+    }
+  }
+
+  let donorsCache = [];
+  async function loadDonors() {
+    const tbody = document.querySelector("#donors-table tbody");
+    try {
+      const res = await cmListEntries("donor", { order: "fields.displayOrder,fields.name" });
+      donorsCache = res.items || [];
+      document.getElementById("donors-setup-card").style.display = "none";
+      if (!donorsCache.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-muted" style="text-align:center;">No partners yet. Use the form above to add one.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = donorsCache.map((e, i) => {
+        const f = e.fields || {};
+        const website = f.websiteUrl?.[LOCALE] || "";
+        return `
+          <tr>
+            <td>${f.displayOrder?.[LOCALE] ?? ""}</td>
+            <td>${escapeHtml(f.name?.[LOCALE] || "")}</td>
+            <td>${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener" style="color:var(--gold-dark);">${escapeHtml(website)}</a>` : ""}</td>
+            <td class="row-actions">
+              <button data-action="edit" data-i="${i}">Edit</button>
+              <button data-action="delete" data-i="${i}" class="danger">Delete</button>
+            </td>
+          </tr>`;
+      }).join("");
+    } catch (err) {
+      document.getElementById("donors-setup-card").style.display = "block";
+      tbody.innerHTML = `<tr><td colspan="4" class="text-muted" style="text-align:center;">Run setup above first.</td></tr>`;
+    }
+  }
+
+  function wireDonors() {
+    const form   = document.getElementById("donors-form");
+    const msg    = document.getElementById("donors-msg");
+    const cancel = document.getElementById("donors-cancel");
+    const title  = document.getElementById("donors-form-title");
+    const setupBtn = document.getElementById("donors-setup-btn");
+    if (setupBtn) setupBtn.addEventListener("click", setupDonorContentType);
+
+    function resetForm() {
+      form.reset(); form.id.value = "";
+      title.textContent = "Add a partner / donor";
+      cancel.style.display = "none";
+      const preview = form.querySelector(".field-photo-preview");
+      if (preview) { preview.src = ""; preview.style.display = "none"; }
+    }
+    cancel.addEventListener("click", resetForm);
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.textContent = "Saving…";
+      try {
+        const id = form.id.value;
+        const existing = id ? donorsCache.find(x => x.sys.id === id) : null;
+        const fields = {
+          name:         form.name.value.trim(),
+          displayOrder: Number(form.displayOrder.value) || 10,
+        };
+        if (form.description.value.trim()) fields.description = form.description.value.trim();
+        if (form.websiteUrl.value.trim())  fields.websiteUrl  = form.websiteUrl.value.trim();
+        if (form.logoUrl.value.trim())     fields.logoUrl     = form.logoUrl.value.trim();
+        await cmCreateOrUpdateEntry("donor", fields, existing);
+        showMsg(msg, "Saved.", "success");
+        resetForm(); loadDonors();
+      } catch (err) {
+        showMsg(msg, "Couldn't save: " + err.message, "error");
+      } finally {
+        btn.disabled = false; btn.textContent = "Save partner";
+      }
+    });
+
+    document.querySelector("#donors-table").addEventListener("click", async (e) => {
+      const act = e.target.dataset.action; if (!act) return;
+      const i = Number(e.target.dataset.i);
+      const item = donorsCache[i]; if (!item) return;
+      if (act === "edit") {
+        const f = item.fields || {};
+        form.id.value           = item.sys.id;
+        form.name.value         = f.name?.[LOCALE] || "";
+        form.description.value  = f.description?.[LOCALE] || "";
+        form.websiteUrl.value   = f.websiteUrl?.[LOCALE] || "";
+        form.logoUrl.value      = f.logoUrl?.[LOCALE] || "";
+        form.displayOrder.value = f.displayOrder?.[LOCALE] ?? 10;
+        updateFieldPreview(form, "logoUrl", f.logoUrl?.[LOCALE] || "");
+        title.textContent = "Edit partner / donor";
+        cancel.style.display = "inline-flex";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      if (act === "delete") {
+        if (!confirm("Remove this partner? This cannot be undone.")) return;
+        try { await cmDeleteEntry(item.sys.id); loadDonors(); }
+        catch (err) { alert("Delete failed: " + err.message); }
+      }
+    });
+  }
+
+  // ── 11. SUBSCRIBERS PANEL ────────────────────────────────
   let subsCache = [];
   async function loadSubscribers() {
     const tbody = document.querySelector("#subs-table tbody");
@@ -1110,6 +1259,7 @@
     wireEvents();       loadEvents();
     wireNewsletters();  loadNewsletters();
     wireStaff();        loadStaff();
+    wireDonors();       loadDonors();
     wireProgress();     loadProgress();
     loadSiteImages();
     wireSubscribers();  loadSubscribers();

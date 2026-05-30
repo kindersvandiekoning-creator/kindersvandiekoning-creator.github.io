@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donors &amp; Partners — Kinders vir die Koning</title>
+  <meta name="description" content="Meet the generous partners and donors who make Kinders vir die Koning's work possible.">
+  <link rel="icon" type="image/png" href="/assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body data-page="donors">
+  <div id="kftk-navbar"></div>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">Our community</span>
+      <h1>Donors &amp; Partners</h1>
+      <p>We are deeply grateful to the organisations and individuals who invest in the children of Strand. Their generosity keeps our doors open and our children thriving.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div id="donors-grid" class="donors-grid">
+        <p class="text-muted">Loading…</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="container-narrow">
+      <div class="cta-block">
+        <h2>Would you like to partner with us?</h2>
+        <p>Whether through financial support, in-kind donations, or sharing your time and skills — every contribution makes a real difference to a child's life.</p>
+        <a href="/contact.html#donate" class="btn btn-primary btn-lg">Get in Touch</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="kftk-footer"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/contentful.js"></script>
+  <script src="/js/loaders.js"></script>
+
+  <script>
+    (async function () {
+      const cf   = window.KFTK_cf;
+      const grid = document.getElementById("donors-grid");
+      if (!cf) return;
+
+      function renderDonor(item) {
+        const f    = item.fields || {};
+        const name = cf.escapeHtml(f.name || "");
+        const logo = f.logoUrl || "";
+        const desc = cf.escapeHtml(f.description || "");
+        const site = f.websiteUrl || "";
+
+        const logoHtml = logo
+          ? `<img src="${logo}" alt="${name} logo" class="donor-logo">`
+          : `<div class="donor-logo-placeholder"><span>${name.charAt(0)}</span></div>`;
+
+        return `
+          <div class="donor-card reveal">
+            <div class="donor-logo-wrap">${logoHtml}</div>
+            <div class="donor-info">
+              <h3 class="donor-name">${name}</h3>
+              ${desc ? `<p class="donor-desc">${desc}</p>` : ""}
+              ${site ? `<a href="${site}" target="_blank" rel="noopener" class="donor-link">Visit website →</a>` : ""}
+            </div>
+          </div>`;
+      }
+
+      try {
+        const res = await cf.getEntries("donor", { order: "fields.displayOrder,fields.name", limit: 100 });
+        if (!res.items || !res.items.length) {
+          grid.innerHTML = `<p class="text-muted" style="grid-column:1/-1;">No partners listed yet.</p>`;
+          return;
+        }
+        grid.innerHTML = res.items.map(renderDonor).join("");
+      } catch (e) {
+        console.error(e);
+        grid.innerHTML = `<p class="text-muted">Could not load partners at the moment — please try again shortly.</p>`;
+      }
+    })();
+  </script>
+
+  <style>
+    .donors-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
+      padding-bottom: 80px;
+    }
+    @media (max-width: 700px) { .donors-grid { grid-template-columns: 1fr; } }
+
+    .donor-card {
+      background: var(--bg-white);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .donor-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+
+    .donor-logo-wrap { min-height: 80px; display: flex; align-items: center; }
+    .donor-logo { max-height: 80px; max-width: 200px; object-fit: contain; border-radius: var(--radius-sm); }
+    .donor-logo-placeholder {
+      width: 80px; height: 80px; border-radius: var(--radius-sm);
+      background: var(--gold-soft); display: flex; align-items: center;
+      justify-content: center; font-size: 2rem; font-weight: 800; color: var(--gold-dark);
+    }
+    .donor-info { display: flex; flex-direction: column; gap: 8px; }
+    .donor-name { font-size: 1.1rem; font-weight: 700; color: var(--navy); margin: 0; }
+    .donor-desc { font-size: .9rem; color: var(--text-muted); margin: 0; line-height: 1.6; }
+    .donor-link { font-size: .85rem; font-weight: 600; color: var(--gold-dark); text-decoration: none; }
+    .donor-link:hover { text-decoration: underline; }
+  </style>
+</body>
+</html>

@@ -309,9 +309,9 @@ section.dark h1, section.dark h2, section.dark h3, section.dark h4 { color: #fff
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1240px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 40px;
 }
 
 .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
@@ -323,6 +323,7 @@ section.dark h1, section.dark h2, section.dark h3, section.dark h4 { color: #fff
   letter-spacing: -.01em;
   color: var(--navy);
   line-height: 1.15;
+  white-space: nowrap;
 }
 .nav-logo-word span { display: block; font-size: .62rem; font-weight: 600; color: var(--gold-dark); letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; line-height: 1.4; }
 @media (max-width: 520px) {
@@ -333,7 +334,7 @@ section.dark h1, section.dark h2, section.dark h3, section.dark h4 { color: #fff
 
 .nav-links {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -364,7 +365,7 @@ section.dark h1, section.dark h2, section.dark h3, section.dark h4 { color: #fff
 /* Mobile panel: hidden entirely on desktop */
 .nav-mobile-panel, .nav-backdrop { display: none; }
 
-@media (max-width: 980px) {
+@media (max-width: 1300px) {
   .nav-links, .nav-cta .btn { display: none; }
   .nav-toggle { display: block; }
 

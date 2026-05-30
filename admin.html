@@ -50,6 +50,7 @@
         <a data-panel="staff">👥 Staff</a>
         <a data-panel="progress">🏗 New school</a>
         <a data-panel="site-images">🖼 Site images</a>
+        <a data-panel="donors">🤝 Donors</a>
         <a data-panel="subscribers">📬 Subscribers</a>
         <a data-panel="queries">💬 Queries</a>
       </nav>
@@ -93,6 +94,7 @@
             <li>👥 <strong>Staff</strong> — add or edit who's on the Our Staff page.</li>
             <li>🏗 <strong>New school</strong> — post progress updates (with a photo) as the new building goes up.</li>
             <li>🖼 <strong>Site images</strong> — change the big photos on the home page and the other pages.</li>
+            <li>🤝 <strong>Donors</strong> — manage the Donors &amp; Partners page.</li>
             <li>📬 <strong>Subscribers</strong> — see who is on the mailing list. Export to a spreadsheet if needed.</li>
             <li>💬 <strong>Queries</strong> — read messages sent from the Contact page.</li>
           </ul>
@@ -381,6 +383,52 @@
             <p id="site-images-msg" style="display:none; margin-top:14px;"></p>
           </form>
         </div>
+      </section>
+
+      <!-- ── DONORS ───────────────────────────────────────── -->
+      <section class="admin-panel" id="panel-donors">
+
+        <div id="donors-setup-card" class="card" style="margin-bottom:24px; border-left:3px solid var(--gold);">
+          <h3>First-time setup</h3>
+          <p class="text-muted" style="margin-bottom:16px;">The <strong>donor</strong> content type does not exist in Contentful yet. Click the button below to create it and add the four initial partners automatically. You only need to do this once.</p>
+          <button type="button" class="btn btn-primary" id="donors-setup-btn">🚀 Create content type &amp; seed donors</button>
+          <p id="donors-setup-msg" style="display:none; margin-top:12px;"></p>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+          <h3 id="donors-form-title">Add a partner / donor</h3>
+          <form id="donors-form">
+            <input type="hidden" name="id">
+            <div class="grid grid-2">
+              <div class="field"><label>Name *</label><input class="input" name="name" required placeholder="e.g. Bana Bathemba"></div>
+              <div class="field"><label>Website URL</label><input class="input" name="websiteUrl" placeholder="https://…"></div>
+              <div class="field" style="grid-column:1/-1;"><label>Logo / Photo</label>
+                <div class="photo-upload-row">
+                  <input type="hidden" name="logoUrl" value="">
+                  <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="logoUrl">📷 Upload logo / photo</button>
+                  <span style="font-size:.78rem; color:var(--text-muted);">PNG, JPG, WebP</span>
+                </div>
+                <img class="field-photo-preview" alt="Logo preview">
+              </div>
+              <div class="field">
+                <label>Display order <span style="font-weight:400; color:var(--text-muted); text-transform:none; letter-spacing:0;">(1 = first)</span></label>
+                <input type="number" class="input" name="displayOrder" value="10" min="1" max="99" step="1">
+              </div>
+            </div>
+            <div class="field"><label>Short description</label><textarea class="textarea" name="description" placeholder="A sentence or two about this partner."></textarea></div>
+            <div style="display:flex; gap:12px;">
+              <button type="submit" class="btn btn-primary">Save partner</button>
+              <button type="button" class="btn btn-outline" id="donors-cancel" style="display:none;">Cancel edit</button>
+            </div>
+            <p id="donors-msg" style="display:none; margin-top:14px;"></p>
+          </form>
+        </div>
+
+        <h3 class="mb-2">All partners &amp; donors</h3>
+        <table class="data-table" id="donors-table">
+          <thead><tr><th>Order</th><th>Name</th><th>Website</th><th></th></tr></thead>
+          <tbody><tr><td colspan="4" class="text-muted" style="text-align:center;">Loading…</td></tr></tbody>
+        </table>
       </section>
 
       <!-- ── SUBSCRIBERS ────────────────────────────────── -->
