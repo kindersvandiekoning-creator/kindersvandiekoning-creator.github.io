@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin sign in — Kinders vir die Koning</title>
+  <title>Admin sign in — Kinders van die Koning</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" href="/assets/images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
     body { background: linear-gradient(135deg, var(--bg-cream) 0%, var(--bg-warm) 100%); }
     .login-wrap {
@@ -40,15 +39,11 @@
 <body>
   <div class="login-wrap">
     <div class="login-card">
-      <img src="/assets/images/logo.png" alt="Kinders vir die Koning" style="height:72px; width:auto; margin:0 auto 20px;">
+      <img src="/assets/images/logo.png" alt="Kinders van die Koning" style="height:72px; width:auto; margin:0 auto 20px;">
       <h1>Admin sign in</h1>
       <p class="sub">For staff only. If you've forgotten your password, please contact the website administrator.</p>
 
       <form id="login-form" novalidate>
-        <div class="field">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" class="input" required autocomplete="email">
-        </div>
         <div class="field">
           <label for="password">Password</label>
           <input type="password" id="password" name="password" class="input" required autocomplete="current-password">
@@ -62,44 +57,38 @@
   </div>
 
   <script src="/js/config.js"></script>
-  <script src="/js/supabase.js"></script>
   <script>
     (function () {
       const form = document.getElementById("login-form");
       const msg  = document.getElementById("login-msg");
+      const cfg  = window.KFTK_CONFIG || {};
 
-      if (!window.KFTK_supabase) {
-        msg.className = "notice error";
-        msg.style.display = "block";
-        msg.textContent = "Supabase is not yet configured. See SETUP.md.";
-        form.querySelector("button").disabled = true;
-        return;
+      // Already logged in? Go straight to admin.
+      if (localStorage.getItem("kftk_auth") === "1") {
+        window.location.href = "/admin.html";
       }
-
-      // If already logged in, redirect to admin
-      window.KFTK_supabase.auth.getSession().then(({ data }) => {
-        if (data?.session) window.location.href = "/admin.html";
-      });
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const btn = form.querySelector("button");
         btn.disabled = true; btn.textContent = "Signing in…";
 
-        const { error } = await window.KFTK_supabase.auth.signInWithPassword({
-          email: form.email.value.trim(),
-          password: form.password.value,
-        });
+        const pw = form.password.value;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(pw);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray  = Array.from(new Uint8Array(hashBuffer));
+        const hashHex    = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-        if (error) {
+        if (hashHex === cfg.adminPasswordHash) {
+          localStorage.setItem("kftk_auth", "1");
+          window.location.href = "/admin.html";
+        } else {
           msg.className = "notice error";
           msg.style.display = "block";
-          msg.textContent = error.message || "Could not sign in. Please try again.";
+          msg.textContent = "Incorrect password. Please try again.";
           btn.disabled = false; btn.textContent = "Sign in";
-          return;
         }
-
-        window.location.href = "/admin.html";
       });
     })();
   </script>

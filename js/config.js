@@ -22,13 +22,21 @@ window.KFTK_CONFIG = {
   },
 
   /* ────────────────────────────────────────────────────────────
-     2. SUPABASE (auth + subscribers list)
-     See SETUP.md § 2 for the SQL and auth user creation.
+     2. SUPABASE (subscribers list + contact queries)
+     Auth is no longer handled by Supabase — see adminPasswordHash below.
      ──────────────────────────────────────────────────────────── */
   supabase: {
-    url:          "https://ibkofwakscfjboszgqac.supabase.co",     // e.g. "https://xxxxxx.supabase.co"
-    anonKey:      "sb_publishable_xfUmNhwl5MaycsmLZLWvyQ_STXRvJe-",     // anon / public key (safe in browser)
+    url:          "https://ibkofwakscfjboszgqac.supabase.co",
+    anonKey:      "sb_publishable_xfUmNhwl5MaycsmLZLWvyQ_STXRvJe-",
   },
+
+  /* ────────────────────────────────────────────────────────────
+     ADMIN LOGIN — no external service needed
+     SHA-256 hash of the admin password. To change the password:
+       1. Run: echo -n "NewPassword" | sha256sum
+       2. Paste the result here.
+     ──────────────────────────────────────────────────────────── */
+  adminPasswordHash: "49806b8287e5262149fb03641bc86f777b4159598a3b9a72bc7e0b785c69cb2a",
 
   /* ────────────────────────────────────────────────────────────
      3. EMAILJS (newsletter sender)
@@ -68,8 +76,7 @@ window.KFTK_CONFIG = {
   const missing = [];
   if (!cfg.contentful.spaceId)       missing.push("contentful.spaceId");
   if (!cfg.contentful.deliveryToken) missing.push("contentful.deliveryToken");
-  if (!cfg.supabase.url)             missing.push("supabase.url");
-  if (!cfg.supabase.anonKey)         missing.push("supabase.anonKey");
+  if (!cfg.adminPasswordHash)        missing.push("adminPasswordHash");
   if (missing.length) {
     console.warn(
       "%c[KvdK] Config missing:",
