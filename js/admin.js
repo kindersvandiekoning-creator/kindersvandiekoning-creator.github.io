@@ -226,20 +226,20 @@
     const heroMap = { homeHeroUrl: "homeHero", homeAboutUrl: "homeAbout", progressHeroUrl: "progressHero" };
     if (heroMap[name]) { updateImagePreview(heroMap[name], url); return; }
 
-    // Gallery slots
-    if (name.startsWith("galleryUrl_")) {
-      const idx = name.replace("galleryUrl_", "");
-      const slot = document.querySelector(`.gallery-slot[data-index="${idx}"]`);
-      if (!slot) return;
+    const input = form?.querySelector(`[name="${name}"]`);
+    if (!input) return;
+
+    // Gallery slots (site images gallery + event photos) — the hidden input
+    // lives inside its own .gallery-slot, so we just walk up from it.
+    const slot = input.closest(".gallery-slot");
+    if (slot) {
       const img = slot.querySelector(".gallery-slot-img");
-      if (img) { img.src = url || ""; }
+      if (img) img.src = url || "";
       slot.classList.toggle("filled", !!url);
       return;
     }
 
     // Regular photo fields — find preview img in same .field container
-    const input = form?.querySelector(`[name="${name}"]`);
-    if (!input) return;
     const field = input.closest(".field");
     if (!field) return;
     const preview = field.querySelector(".field-photo-preview");
@@ -250,15 +250,17 @@
   }
 
   // Per-field image upload wiring (uses the hidden <input type=file>)
+  // Delegated from document so slots created later (event photos) work too.
   function wireUploadButtons() {
     const fileInput = document.getElementById("upload-input");
     let activeTarget = null;
-    document.querySelectorAll(".upload-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        activeTarget = { form: btn.closest("form"), name: btn.dataset.target, btn };
-        fileInput.value = "";
-        fileInput.click();
-      });
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".upload-btn");
+      if (!btn) return;
+      activeTarget = { form: btn.closest("form"), name: btn.dataset.target, btn };
+      fileInput.multiple = false;
+      fileInput.value = "";
+      fileInput.click();
     });
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files?.[0];
@@ -271,15 +273,199 @@
         const url = await cmUploadAsset(file, file.name);
         if (input) input.value = url;
         updateFieldPreview(activeTarget.form, activeTarget.name, url);
+        if (activeTarget.name.startsWith("eventPhoto_")) refreshEventPhotoUi();
       } catch (err) {
         alert("Upload failed: " + err.message);
       } finally {
         btn.disabled = false; btn.textContent = originalText;
       }
     });
+
+    // "✕" buttons on gallery slots
+    document.addEventListener("click", (e) => {
+      const rm = e.target.closest(".gallery-slot-remove");
+      if (!rm) return;
+      const slot = rm.closest(".gallery-slot");
+      const form = rm.closest("form");
+      const hidden = slot?.querySelector("input[type=hidden]");
+      if (!hidden) return;
+      hidden.value = "";
+      updateFieldPreview(form, hidden.name, "");
+      if (hidden.name.startsWith("eventPhoto_")) compactEventPhotos();
+    });
   }
 
-  // ── 5. EVENTS PANEL ──────────────────────────────────────
+  // ── 5. EVENT PHOTOS (up to 12 per event) ─────────────────
+  const EVENT_PHOTO_SLOTS = 12;
+  let eventGalleryFieldOk = false;   // set by ensureEventGalleryField()
+
+  /* Contentful needs a "galleryUrls" list field on the event content type.
+     This adds it once, automatically, and is safe to run every load:
+     if the field is already there it does nothing.                      */
+  async function ensureEventGalleryField() {
+    try {
+      const ct = await cmRequest("/content_types/event");
+      if ((ct.fields || []).some(f => f.id === "galleryUrls")) {
+        eventGalleryFieldOk = true;
+        return;
+      }
+      console.log("[KvdK] Adding galleryUrls field to the event content type…");
+      ct.fields.push({
+        id:        "galleryUrls",
+        name:      "Photo URLs",
+        type:      "Array",
+        items:     { type: "Symbol", validations: [] },
+        required:  false,
+        localized: false,
+      });
+      const updated = await cmRequest("/content_types/event", {
+        method: "PUT",
+        body: { name: ct.name, description: ct.description, displayField: ct.displayField, fields: ct.fields },
+        extraHeaders: { "X-Contentful-Version": String(ct.sys.version) },
+      });
+      await cmRequest("/content_types/event/published", {
+        method: "PUT",
+        extraHeaders: { "X-Contentful-Version": String(updated.sys.version) },
+      });
+      eventGalleryFieldOk = true;
+      console.log("[KvdK] galleryUrls field added and published. ✅");
+    } catch (err) {
+      eventGalleryFieldOk = false;
+      console.error("[KvdK] Could not add the galleryUrls field to Contentful:", err);
+      const warn = document.getElementById("events-photos-warning");
+      if (warn) {
+        warn.style.display = "block";
+        warn.textContent = "Extra photos can't be saved yet — Contentful hasn't accepted the new photo list field. " +
+                           "Only the first photo will be saved. Please let Quintin know.";
+      }
+    }
+  }
+
+  function eventPhotoSlotHtml(i) {
+    return `
+      <div class="gallery-slot" data-index="${i}">
+        <input type="hidden" name="eventPhoto_${i}" value="">
+        <img src="" alt="" class="gallery-slot-img">
+        <button type="button" class="gallery-slot-remove" title="Remove this photo" aria-label="Remove photo ${i + 1}">✕</button>
+        <div class="gallery-slot-placeholder">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>${i === 0 ? "Main photo" : "Photo " + (i + 1)}</span>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm upload-btn" data-target="eventPhoto_${i}">Upload</button>
+      </div>`;
+  }
+
+  function buildEventPhotoSlots() {
+    const grid = document.getElementById("event-photo-slots");
+    if (!grid || grid.dataset.built) return;
+    grid.innerHTML = Array.from({ length: EVENT_PHOTO_SLOTS }, (_, i) => eventPhotoSlotHtml(i)).join("");
+    grid.dataset.built = "1";
+    setEventPhotos([]);   // start with just the one empty "Main photo" slot
+  }
+
+  function eventForm() { return document.getElementById("events-form"); }
+
+  // Read the filled slots, in order
+  function getEventPhotos() {
+    const form = eventForm();
+    if (!form) return [];
+    return Array.from({ length: EVENT_PHOTO_SLOTS }, (_, i) =>
+      (form.querySelector(`[name="eventPhoto_${i}"]`)?.value || "").trim()
+    ).filter(Boolean);
+  }
+
+  // Write a list of URLs into the slots (extras beyond 12 are dropped)
+  function setEventPhotos(urls) {
+    const form = eventForm();
+    if (!form) return;
+    const list = (urls || []).filter(Boolean).slice(0, EVENT_PHOTO_SLOTS);
+    for (let i = 0; i < EVENT_PHOTO_SLOTS; i++) {
+      const url = list[i] || "";
+      const hidden = form.querySelector(`[name="eventPhoto_${i}"]`);
+      if (hidden) hidden.value = url;
+      updateFieldPreview(form, `eventPhoto_${i}`, url);
+      // Show the filled slots plus one empty one — no wall of empty boxes
+      const slot = hidden?.closest(".gallery-slot");
+      if (slot) slot.style.display = (i <= list.length) ? "" : "none";
+    }
+    if (form.photoUrl) form.photoUrl.value = list[0] || "";
+    refreshEventPhotoUi();
+  }
+
+  // Close up gaps so the filled photos always sit at the front
+  function compactEventPhotos() { setEventPhotos(getEventPhotos()); }
+
+  function refreshEventPhotoUi() {
+    const status = document.getElementById("events-photos-status");
+    const form   = eventForm();
+    const n      = getEventPhotos().length;
+    if (form?.photoUrl) form.photoUrl.value = getEventPhotos()[0] || "";
+    if (!status) return;
+    status.textContent = n === 0
+      ? "No photos yet"
+      : `${n} of ${EVENT_PHOTO_SLOTS} photo${n === 1 ? "" : "s"} added`;
+  }
+
+  // "Add photos" — pick several files at once, they fill the empty slots
+  function wireEventPhotoBulkUpload() {
+    const addBtn   = document.getElementById("events-photos-add");
+    const clearBtn = document.getElementById("events-photos-clear");
+    const status   = document.getElementById("events-photos-status");
+    if (!addBtn) return;
+
+    // Its own file input so the shared single-file one is left alone
+    const multiInput = document.createElement("input");
+    multiInput.type = "file";
+    multiInput.accept = "image/*";
+    multiInput.multiple = true;
+    multiInput.style.display = "none";
+    document.body.appendChild(multiInput);
+
+    addBtn.addEventListener("click", () => {
+      if (getEventPhotos().length >= EVENT_PHOTO_SLOTS) {
+        alert(`You already have ${EVENT_PHOTO_SLOTS} photos on this event — remove one first.`);
+        return;
+      }
+      multiInput.value = "";
+      multiInput.click();
+    });
+
+    multiInput.addEventListener("change", async () => {
+      const files = Array.from(multiInput.files || []);
+      if (!files.length) return;
+      const existing = getEventPhotos();
+      const room = EVENT_PHOTO_SLOTS - existing.length;
+      const chosen = files.slice(0, room);
+      const skipped = files.length - chosen.length;
+
+      addBtn.disabled = true;
+      const uploaded = [];
+      for (let i = 0; i < chosen.length; i++) {
+        if (status) status.textContent = `Uploading photo ${i + 1} of ${chosen.length}…`;
+        addBtn.textContent = `Uploading ${i + 1}/${chosen.length}…`;
+        try {
+          uploaded.push(await cmUploadAsset(chosen[i], chosen[i].name));
+          setEventPhotos([...existing, ...uploaded]);   // show each one as it lands
+        } catch (err) {
+          console.error(err);
+          alert(`"${chosen[i].name}" could not be uploaded: ${err.message}`);
+        }
+      }
+      addBtn.disabled = false; addBtn.textContent = "📷 Add photos";
+      setEventPhotos([...existing, ...uploaded]);
+      if (skipped > 0) {
+        alert(`${skipped} photo${skipped === 1 ? "" : "s"} left out — an event can hold ${EVENT_PHOTO_SLOTS} photos at most.`);
+      }
+    });
+
+    if (clearBtn) clearBtn.addEventListener("click", () => {
+      if (!getEventPhotos().length) return;
+      if (!confirm("Remove all photos from this event? (They stay in your Contentful media library.)")) return;
+      setEventPhotos([]);
+    });
+  }
+
+  // ── 5b. EVENTS PANEL ─────────────────────────────────────
   let eventsCache = [];
   async function loadEvents() {
     const tbody = document.querySelector("#events-table tbody");
@@ -287,7 +473,7 @@
       const res = await cmListEntries("event", { order: "-fields.startDate" });
       eventsCache = res.items || [];
       if (!eventsCache.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">No events yet. Add your first one above.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-muted" style="text-align:center;">No events yet. Add your first one above.</td></tr>`;
         return;
       }
       tbody.innerHTML = eventsCache.map((e, i) => {
@@ -296,11 +482,13 @@
         const date  = f.startDate?.[LOCALE] || "";
         const loc   = f.location?.[LOCALE] || "";
         const published = !!e.sys.publishedVersion;
+        const nPhotos = entryPhotos(f).length;
         return `
           <tr>
             <td>${fmtDate(date)}</td>
             <td>${escapeHtml(title)}</td>
             <td>${escapeHtml(loc)}</td>
+            <td>${nPhotos ? `📷 ${nPhotos}` : '<span class="text-muted">—</span>'}</td>
             <td>${published ? '<span class="pill">Live</span>' : '<span class="pill" style="background:rgba(217,69,69,.1); color:#a02020;">Draft</span>'}</td>
             <td class="row-actions">
               <button data-action="edit" data-i="${i}">Edit</button>
@@ -310,8 +498,20 @@
       }).join("");
     } catch (err) {
       console.error(err);
-      tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center; color:#a02020;">${escapeHtml(err.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-muted" style="text-align:center; color:#a02020;">${escapeHtml(err.message)}</td></tr>`;
     }
+  }
+
+  // Photos stored on an event entry: the galleryUrls list, with the older
+  // single photoUrl kept as the first photo so nothing published before
+  // this change disappears.
+  function entryPhotos(f) {
+    const out = [];
+    const legacy = (f.photoUrl?.[LOCALE] || "").trim();
+    if (legacy) out.push(legacy);
+    const list = f.galleryUrls?.[LOCALE];
+    if (Array.isArray(list)) list.forEach(u => { if (typeof u === "string" && u.trim()) out.push(u.trim()); });
+    return [...new Set(out)].slice(0, EVENT_PHOTO_SLOTS);
   }
   function wireEvents() {
     const form = document.getElementById("events-form");
@@ -319,11 +519,15 @@
     const cancel = document.getElementById("events-cancel");
     const title  = document.getElementById("events-form-title");
 
+    buildEventPhotoSlots();
+    wireEventPhotoBulkUpload();
+
     function resetForm() {
       form.reset(); form.id.value = "";
       title.textContent = "Add an event";
       cancel.style.display = "none";
       form.querySelectorAll(".field-photo-preview").forEach(p => { p.src = ""; p.style.display = "none"; });
+      setEventPhotos([]);
     }
     cancel.addEventListener("click", resetForm);
 
@@ -334,7 +538,7 @@
       try {
         const id = form.id.value;
         const existing = id ? eventsCache.find(x => x.sys.id === id) : null;
-        const photoUrl = form.photoUrl.value.trim();
+        const photos = getEventPhotos();
         // <input type=datetime-local> → "2026-05-20T10:00"; convert to full ISO (local → UTC).
         let startIso = form.startDate.value;
         if (startIso && !/Z$|[+-]\d\d:?\d\d$/.test(startIso)) {
@@ -349,11 +553,14 @@
           summary:   form.summary.value.trim(),
           details:   form.details.value.trim(),
         };
-        // photo: we store as URL text field (kept simple)
-        if (photoUrl) fields.photoUrl = photoUrl;
+        // Photos: the first one stays in photoUrl (the original single-photo
+        // field), the whole list goes into galleryUrls.
+        if (photos[0]) fields.photoUrl = photos[0];
+        if (eventGalleryFieldOk) fields.galleryUrls = photos;
 
         await cmCreateOrUpdateEntry("event", fields, existing);
-        showMsg(msg, "Saved. It's live on the site.", "success");
+        const extra = photos.length > 1 ? ` ${photos.length} photos attached.` : "";
+        showMsg(msg, "Saved. It's live on the site." + extra, "success");
         resetForm();
         loadEvents(); loadStats();
       } catch (err) {
@@ -390,8 +597,7 @@
         form.location.value  = f.location?.[LOCALE] || "";
         form.summary.value   = f.summary?.[LOCALE] || "";
         form.details.value   = f.details?.[LOCALE] || "";
-        form.photoUrl.value  = f.photoUrl?.[LOCALE] || "";
-        updateFieldPreview(form, "photoUrl", f.photoUrl?.[LOCALE] || "");
+        setEventPhotos(entryPhotos(f));
         title.textContent = "Edit event";
         cancel.style.display = "inline-flex";
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1228,7 +1434,9 @@
     });
 
     wireUploadButtons();
-    wireEvents();       loadEvents();
+    wireEvents();
+    // Make sure Contentful has the photo-list field, then load the events
+    ensureEventGalleryField().then(loadEvents);
     wireNewsletters();  loadNewsletters();
     wireStaff();        loadStaff();
     wireDonors();       loadDonors();

@@ -48,7 +48,15 @@ validations at default unless noted.
 | Location | `location` | Short text | |
 | Summary | `summary` | Short text (long) | |
 | Details | `details` | Long text | |
-| Photo URL | `photoUrl` | Short text | URL, filled automatically by admin |
+| Photo URL | `photoUrl` | Short text | main photo — filled automatically by admin |
+| Photo URLs | `galleryUrls` | Short text, **list** | up to 12 photos — filled automatically by admin |
+
+> **`galleryUrls` is created for you.** The first time the admin portal opens
+> after this feature was added, it checks the `event` content type and adds
+> `galleryUrls` (a list of short text) itself, then publishes the change. You
+> do not need to add it by hand. If it ever fails, the Events panel shows a red
+> notice and only the main photo is saved — the browser console explains why.
+> `photoUrl` is kept as the first/main photo so older events still work.
 
 #### Content type: `newsletter` (Name: "Newsletter")
 
@@ -380,6 +388,10 @@ window.KFTK_CONFIG = {
    updates.
 4. To send a newsletter: write it, click **Save & send to all subscribers**.
 5. To change a big photo on the site: **Site images** → upload → Save.
+6. To post feedback after an event: **Events** → **Edit** on that event →
+   **Add photos** (she can select several at once, up to 12) → **Save event**.
+   The photos appear under that event on the Events page, and visitors can
+   click any one to see it full-screen.
 
 Everything she saves is instantly live on the public website.
 
